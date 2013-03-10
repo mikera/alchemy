@@ -22,21 +22,25 @@
       (.setCursorBlink jc false)
       jc)))
 
-(defn launch [state]
-  (let [^JFrame frame (:frame state)
-        ^JConsole jc (:console state)]
+(defn launch 
+  "Launch the game with an initial game state. Can be called from REPL."
+  ([state]
+    (let [^JFrame frame (:frame state)
+          ^JConsole jc (:console state)]
       (.add (.getContentPane frame) jc)
       (.pack frame)
       (.setVisible frame true)
       (.write jc "Alchemy Lives!") 
-      frame))
+      frame)))
 
-(defn new-state []
-  (let [state {:game (atom nil)
-               :console (new-console)
-               :frame (new-frame)
-               :event-handler (atom nil)}]
-    state))
+(defn new-state
+  "Create a brand new game state."
+  ([]
+    (let [state {:game (atom nil)
+                 :console (new-console)
+                 :frame (new-frame)
+                 :event-handler (atom nil)}]
+      state)))
 
 ;; a state for the world
 (def s (new-state))
