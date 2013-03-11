@@ -7,5 +7,5 @@
   (let [s (new-state)
         game @(:game s)]
     (is game)
-    (is (world/hero game))))
+    (is (:is-hero (world/hero game)))))
 

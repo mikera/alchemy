@@ -101,10 +101,10 @@
                     :is-creature true
                     :z-order 75})))
 
-(defn define-player [lib]
+(defn define-hero [lib]
   (-> lib
     (proclaim "you" "base creature" 
-                   {:is-player true
+                   {:is-hero true
                     :char \@
                     :colour-fg (colour 0xFFFFFF)
                     :z-order 100})))
@@ -133,7 +133,7 @@
     (define-items)
     (define-tiles)
     (define-creatures)
-    (define-player)))
+    (define-hero)))
 
 (defn build-lib []
   (let [lib {:objects {} ;; map of object name to properties
