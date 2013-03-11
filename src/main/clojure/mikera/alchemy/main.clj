@@ -97,11 +97,14 @@
       (let [k (map-synonyms k) ]
         (cond
           (.contains "12346789" k)
-            (swap! (:game state) world/handle-move (or (move-dir-map k) (error "direction no recognised [" k "]")))
+            (do
+              (swap! (:game state) world/handle-move (or (move-dir-map k) (error "direction no recognised [" k "]")))
+              (redraw-screen state))
           :else
 	          (do 
 	            (swap! (:game state) world/handle-command k)
-	            (redraw-screen state)))))))
+	            (redraw-screen state)))
+        :handled))))
 
 (defn main-handler 
   "Sets up the main handler"

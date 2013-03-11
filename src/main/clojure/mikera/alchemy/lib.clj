@@ -69,7 +69,11 @@
     (proclaim "base floor" "base tile" 
               {:is-blocking false
                :char (char 0x00B7)
-               :z-order 0})))
+               :z-order 0})
+    (proclaim "floor" "base floor" 
+              {:colour-fg (colour 0x404040)})
+    (proclaim "wall" "base wall" 
+              {:colour-fg (colour 0x804000)})))
 
 
 ;; ===================================================

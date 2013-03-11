@@ -1,5 +1,6 @@
 (ns mikera.alchemy.world
   (:require [mikera.alchemy.lib :as lib]) 
+  (:require [mikera.alchemy.dungeon :as dungeon]) 
   (:use mikera.orculje.core))
 
 (set! *warn-on-reflection* true)
@@ -28,7 +29,8 @@
 
 (defn new-game []
   (as-> (empty-game) game
-    (lib/setup game) 
+    (lib/setup game)
+    (dungeon/generate game)
     (add-thing game (loc 0 0 0) (lib/create game "you")) 
     (merge game {:turn 0
                  :hero-id (:last-added-id game)})))
