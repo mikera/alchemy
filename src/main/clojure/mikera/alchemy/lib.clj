@@ -2,6 +2,7 @@
   (:use mikera.orculje.core)
   (:use mikera.cljutils.error))
 
+;; ===================================================
 ;; utility functions for library building
 
 (defn add-object 
@@ -23,19 +24,27 @@
                              :parent-name parent-name})]
       (add-object lib object))))
 
-;; library definitions
+;; ===================================================
+;; library definitions - base
 
 (defn define-base [lib]
   (-> lib
-    (add-object {:name "base object"})
+    (add-object {:name "base object"}) ;; first object in the library, has no parent
     (proclaim "base thing" "base object"
             {:id nil
              :is-thing true})))
+
+;; ===================================================
+;; library definitions - tiles
 
 (defn define-tiles [lib]
   (-> lib
     (proclaim "base tile" "base object" {:is-tile true})
     (proclaim "base wall" "base tile" {:blocking true})))
+
+
+;; ===================================================
+;; library definitions - items
 
 (defn define-potions [lib]
   (-> lib))
@@ -43,6 +52,9 @@
 (defn define-items [lib]
   (-> lib
     (define-potions)))
+
+;; ===================================================
+;; library definitions - creatures
 
 (defn define-creatures [lib]
   (-> lib
@@ -54,16 +66,16 @@
 (defn define-player [lib]
   (-> lib
     (proclaim "you" "base creature" 
-                   {:is-mobile true
-                    :is-blocking true                             
-                    :is-creature true})))
+                   {:is-player true})))
 
+;; ==============================================
 ;; library accessors
 
 (defn all-things [game]
   "Returns a list of all things possible in the game library"
   (vals (:objects (:lib game))))
 
+;; ==============================================
 ;; library main build
 
 (defn define-objects [lib]
