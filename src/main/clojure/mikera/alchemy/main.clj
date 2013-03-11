@@ -35,11 +35,9 @@
     (loop [z-order (long -100)
            ct t
            ts (seq (get-things game x y z))]
-      (when (== 0 x y z) (println "Things at 0,0,0 = " ts))
       (if ts
         (let [nt (first ts)
               nz (long (:z-order nt 0))]
-          (println (str "found: " nt))
           (if (and (> nz z-order) (:is-visible nt))
             (recur nz nt (next ts))
             (recur z-order ct (next ts))))
@@ -67,15 +65,10 @@
   ([state]
     (redraw-world state)))
 
-
-(defn make-input-action 
-  "Builds an input action handler for the specified state object"
-  ([state k]
-    (fn []
-      (let [hand @(:event-handler state)]
-        (or
-          (hand k)
-          (println (str "Key pressed but no event handler ready: " k)))))))
+;; ========================================================
+;; Input state handler functions
+;;
+;; each handler sets up :event-handler to deal with next keypress
 
 (defn make-main-handler
   "Create main keypress handler, for general game position"
@@ -86,6 +79,24 @@
         (swap! (:game state) world/handle-command k)
         (redraw-screen state)
         :handled))))
+
+(defn main-handler 
+  "Sets up the main handler"
+  ([state]
+    (redraw-screen state)
+    (reset! (:event-handler state) (make-main-handler state)))) 
+
+;; ====================================================
+;; input handling
+
+(defn make-input-action 
+  "Builds an input action handler for the specified state object"
+  ([state k]
+    (fn []
+      (let [hand @(:event-handler state)]
+        (or
+          (hand k)
+          (println (str "Key pressed but no event handler ready: " k)))))))
 
 (defn setup-input 
   ([^JComponent comp state]
@@ -100,6 +111,9 @@
                               KeyEvent/VK_ESCAPE "Q"}]
       (gui/add-input-binding comp (gui/keystroke-from-keyevent ke) (make-input-action state (str k))))))
 
+;; =================================================================
+;; Overall game control / main entry points
+
 (defn launch 
   "Launch the game with an initial game state. Can be called from REPL."
   ([state]
@@ -109,7 +123,7 @@
       (.add (.getContentPane frame) jc)
       (.pack frame)
       (.setVisible frame true)
-      (redraw-screen state) 
+      (main-handler state) 
       frame)))
 
 (defn new-state
@@ -119,7 +133,6 @@
                  :console (new-console)
                  :frame (new-frame)
                  :event-handler (atom nil)}]
-      (reset! (:event-handler state) (make-main-handler state))
       state)))
 
 ;; a state for the world
