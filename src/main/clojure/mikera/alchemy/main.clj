@@ -1,5 +1,6 @@
 (ns mikera.alchemy.main
   (:use mikera.orculje.core)
+  (:use mikera.cljutils.error)
   (:require [mikera.orculje.gui :as gui])
   (:require [mikera.alchemy.world :as world])
   (:import [javax.swing JFrame JComponent])
@@ -49,13 +50,18 @@
   ([state]
 	  (let [^JConsole jc (:console state)
 	        game @(:game state) 
+          hero (world/hero game) 
+          ^mikera.orculje.engine.Location hloc (:location hero) 
 	        w (.getColumns jc)
 	        h (.getRows jc)
 	        gw (- w 20)
-	        gh (- h MESSAGE_WINDOW_HEIGHT)]
+	        gh (- h MESSAGE_WINDOW_HEIGHT)
+         ox (long (- (.x hloc) (quot gw 2))) 
+         oy (long (- (.y hloc) (quot gh 2))) 
+         oz (long (.z hloc))]
 	    (dotimes [y gh]
 	      (dotimes [x gw]
-	        (let [t (displayable-thing game x y 0)]
+	        (let [t (displayable-thing game (+ ox x) (+ oy y) 0)]
 	          (.setForeground jc ^Color (:colour-fg t))
 	          (.setBackground jc ^Color (:colour-bg t))
 	          (gui/draw jc x y (char (:char t))))))
@@ -71,15 +77,31 @@
 ;;
 ;; each handler sets up :event-handler to deal with next keypress
 
+(def move-dir-map
+  {"1" (loc -1 -1 0)
+   "2" (loc 0 -1 0)
+   "3" (loc 1 -1 0)
+   "4" (loc -1 0 0)
+   "6" (loc 1 0 0)
+   "7" (loc -1 1 0)
+   "8" (loc 0 1 0)
+   "9" (loc 1 1 0)})
+
+(defn map-synonyms [k]
+  ({"5" "."} k k))
+
 (defn make-main-handler
   "Create main keypress handler, for general game position"
   ([state]
     (fn [k]
-      (let [k ({"5" "."} k k) ;; handle synonyms
-            ]
-        (swap! (:game state) world/handle-command k)
-        (redraw-screen state)
-        :handled))))
+      (let [k (map-synonyms k) ]
+        (cond
+          (.contains "12346789" k)
+            (swap! (:game state) world/handle-move (or (move-dir-map k) (error "direction no recognised [" k "]")))
+          :else
+	          (do 
+	            (swap! (:game state) world/handle-command k)
+	            (redraw-screen state)))))))
 
 (defn main-handler 
   "Sets up the main handler"

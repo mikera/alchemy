@@ -33,10 +33,18 @@
     (merge game {:turn 0
                  :hero-id (:last-added-id game)})))
 
+(defn handle-move [game dir]
+  (let [h (hero game)]
+    (move-thing game h (loc-add (:location h) dir))))
+
 (defn handle-command
   "Handles a command, expressed as a complete command String"
   [game k]
   (let [turn (inc (:turn game))]
-    (println (str "Handling turn " turn " with keypress " k))
-    (-> game
-      (assoc :turn turn))))
+    
+    (as-> game game
+      (cond
+        :else (do 
+                (println (str "Turn " turn " unhandled command [" k "]")) 
+                game))    
+      (assoc game :turn turn))))
