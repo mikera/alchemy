@@ -63,11 +63,11 @@
               {:is-tile true
                :z-order 25})
     (proclaim "base wall" "base tile" 
-              {:blocking true
+              {:is-blocking true
                :char (char 0x2593)
                :z-order 50})
     (proclaim "base floor" "base tile" 
-              {:blocking false
+              {:is-blocking false
                :char (char 0x00B7)
                :z-order 0})))
 
@@ -75,11 +75,19 @@
 ;; ===================================================
 ;; library definitions - items
 
+(defn define-base-item [lib]
+  (-> lib
+    (proclaim "base item" "base thing" 
+              {:is-item true
+               :char (char \%)
+               :z-order 20})))
+
 (defn define-potions [lib]
   (-> lib))
 
 (defn define-items [lib]
   (-> lib
+    (define-base-item)
     (define-potions)))
 
 ;; ===================================================
