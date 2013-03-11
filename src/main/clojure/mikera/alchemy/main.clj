@@ -1,6 +1,8 @@
 (ns mikera.alchemy.main
   (:require [mikera.orculje.gui :as gui])
+  (:require [mikera.alchemy.world :as world])
   (:import [javax.swing JFrame JComponent])
+  (:import [java.awt.event KeyEvent])
   (:import [java.awt Font Color])
   (:import [mikera.gui JConsole]))
 
@@ -35,11 +37,44 @@
         (gui/draw jc x y (str x))))
     (.repaint jc)))
 
+
+(defn make-input-action 
+  "Builds an input action handler for the specified state object"
+  ([state k]
+    (fn []
+      (let [hand @(:event-handler state)]
+        (or
+          (hand k)
+          (println (str "Key pressed but no event handler ready: " k)))))))
+
+(defn make-main-handler
+  [state]
+  (fn [k]
+    (let [k ({"5" "."} k k) ;; handle synonyms
+          ]
+      (swap! (:game state) world/handle-command k)
+      (redraw-screen state)
+      :handled)))
+
+(defn setup-input 
+  ([^JComponent comp state]
+    (doseq [k "abcdefghijklmnopqrstuvwxyz 01234567890!\"\\/£$%^&*()'~<>?@#_-+=[]{},."]
+      (gui/add-input-binding comp (gui/keystroke k) (make-input-action state (str k))))
+    (doseq [k "ABCDEFGHIJKLMNOPQRSTUVWXYZ"]
+      (gui/add-input-binding comp (gui/keystroke k) (make-input-action state (str k))))
+    (doseq [[^KeyEvent ke k] {KeyEvent/VK_LEFT "4"
+                              KeyEvent/VK_RIGHT "6"
+                              KeyEvent/VK_UP "2"
+                              KeyEvent/VK_DOWN "8"
+                              KeyEvent/VK_ESCAPE "Q"}]
+      (gui/add-input-binding comp (gui/keystroke-from-keyevent ke) (make-input-action state (str k))))))
+
 (defn launch 
   "Launch the game with an initial game state. Can be called from REPL."
   ([state]
     (let [^JFrame frame (:frame state)
           ^JConsole jc (:console state)]
+      (setup-input jc state) 
       (.add (.getContentPane frame) jc)
       (.pack frame)
       (.setVisible frame true)
@@ -50,10 +85,11 @@
 (defn new-state
   "Create a brand new game state."
   ([]
-    (let [state {:game (atom nil)
+    (let [state {:game (atom (world/new-game))
                  :console (new-console)
                  :frame (new-frame)
                  :event-handler (atom nil)}]
+      (reset! (:event-handler state) (make-main-handler state))
       state)))
 
 ;; a state for the world
