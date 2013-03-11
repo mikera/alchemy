@@ -78,7 +78,6 @@
       (.add (.getContentPane frame) jc)
       (.pack frame)
       (.setVisible frame true)
-      (.write jc "Alchemy Lives!") 
       (redraw-screen state) 
       frame)))
 
@@ -95,6 +94,11 @@
 ;; a state for the world
 (def s (new-state))
 
+(defn relaunch 
+  "Relaunches the game with a new initial state. Designed for REPL use" 
+  ([]
+    (def s (new-state))
+    (launch s)))
 
 (defn main 
   "Main entry point to the demo, called directly from Java main() method in DemoApp"
