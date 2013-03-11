@@ -11,6 +11,9 @@
 (set! *unchecked-math* true)
 
 (def ^Font font (Font. "Courier New" Font/PLAIN 16))
+(def SCREEN_WIDTH 80)
+(def SCREEN_HEIGHT 40)
+(def MESSAGE_WINDOW_HEIGHT 5) 
 
 (defn new-frame 
   (^JFrame []
@@ -19,7 +22,7 @@
 
 (defn new-console
   (^JConsole []
-    (let [jc (JConsole. 100 40)]
+    (let [jc (JConsole. SCREEN_WIDTH SCREEN_HEIGHT)]
       (.setMainFont jc font)
       (.setFocusable jc true)
       (.setCursorVisible jc false)
@@ -42,20 +45,27 @@
             (recur z-order ct (next ts))))
         ct))))
 
-(defn redraw-screen [state]
-  (let [^JConsole jc (:console state)
-        game @(:game state) 
-        w (.getColumns jc)
-        h (.getRows jc)
-        gw (- w 20)
-        gh (- h 5)]
-    (dotimes [y gh]
-      (dotimes [x gw]
-        (let [t (displayable-thing game x y 0)]
-          (.setForeground jc ^Color (:colour-fg t))
-          (.setBackground jc ^Color (:colour-bg t))
-          (gui/draw jc x y (char (:char t))))))
-    (.repaint jc)))
+(defn redraw-world 
+  "Redraws the game world playing area"
+  ([state]
+	  (let [^JConsole jc (:console state)
+	        game @(:game state) 
+	        w (.getColumns jc)
+	        h (.getRows jc)
+	        gw (- w 20)
+	        gh (- h MESSAGE_WINDOW_HEIGHT)]
+	    (dotimes [y gh]
+	      (dotimes [x gw]
+	        (let [t (displayable-thing game x y 0)]
+	          (.setForeground jc ^Color (:colour-fg t))
+	          (.setBackground jc ^Color (:colour-bg t))
+	          (gui/draw jc x y (char (:char t))))))
+	    (.repaint jc))))
+
+(defn redraw-screen 
+  "Redraw the main playing screen"
+  ([state]
+    (redraw-world state)))
 
 
 (defn make-input-action 
@@ -68,13 +78,14 @@
           (println (str "Key pressed but no event handler ready: " k)))))))
 
 (defn make-main-handler
-  [state]
-  (fn [k]
-    (let [k ({"5" "."} k k) ;; handle synonyms
-          ]
-      (swap! (:game state) world/handle-command k)
-      (redraw-screen state)
-      :handled)))
+  "Create main keypress handler, for general game position"
+  ([state]
+    (fn [k]
+      (let [k ({"5" "."} k k) ;; handle synonyms
+            ]
+        (swap! (:game state) world/handle-command k)
+        (redraw-screen state)
+        :handled))))
 
 (defn setup-input 
   ([^JComponent comp state]
