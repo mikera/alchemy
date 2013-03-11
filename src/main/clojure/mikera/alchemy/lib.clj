@@ -1,6 +1,7 @@
 (ns mikera.alchemy.lib
   (:use mikera.orculje.core)
-  (:use mikera.cljutils.error))
+  (:use mikera.cljutils.error)
+  (:use mikera.orculje.util))
 
 ;; ===================================================
 ;; utility functions for library building
@@ -29,7 +30,11 @@
 
 (defn define-base [lib]
   (-> lib
-    (add-object {:name "base object"}) ;; first object in the library, has no parent
+    (add-object 
+      {:name "base object"
+       :char \?
+       :colour-fg (colour 0xFFFF00)
+       :colour-bg (colour 0x000000)}) ;; first object in the library, has no parent
     (proclaim "base thing" "base object"
             {:id nil
              :is-thing true})))
@@ -40,7 +45,12 @@
 (defn define-tiles [lib]
   (-> lib
     (proclaim "base tile" "base object" {:is-tile true})
-    (proclaim "base wall" "base tile" {:blocking true})))
+    (proclaim "base wall" "base tile" 
+              {:blocking true
+               :char (char 0x2593)})
+    (proclaim "base floor" "base tile" 
+              {:blocking false
+               :char (char 0x00B7)})))
 
 
 ;; ===================================================
@@ -66,7 +76,9 @@
 (defn define-player [lib]
   (-> lib
     (proclaim "you" "base creature" 
-                   {:is-player true})))
+                   {:is-player true
+                    :char \@
+                    :colour-fg (colour 0xFFFFFF)})))
 
 ;; ==============================================
 ;; library accessors
