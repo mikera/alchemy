@@ -1,4 +1,5 @@
 (ns mikera.alchemy.main
+  (:use mikera.orculje.core)
   (:require [mikera.orculje.gui :as gui])
   (:require [mikera.alchemy.world :as world])
   (:import [javax.swing JFrame JComponent])
@@ -25,16 +26,35 @@
       (.setCursorBlink jc false)
       jc)))
 
+(defn displayable-thing 
+  [game ^long x ^long y ^long z]
+  (let [t (or (get-tile game x y z) world/BLANK_TILE)]
+    (loop [z-order (long -100)
+           ct t
+           ts (seq (get-things game x y z))]
+      (when (== 0 x y z) (println "Things at 0,0,0 = " ts))
+      (if ts
+        (let [nt (first ts)
+              nz (long (:z-order nt 0))]
+          (println (str "found: " nt))
+          (if (and (> nz z-order) (:is-visible nt))
+            (recur nz nt (next ts))
+            (recur z-order ct (next ts))))
+        ct))))
+
 (defn redraw-screen [state]
   (let [^JConsole jc (:console state)
+        game @(:game state) 
         w (.getColumns jc)
         h (.getRows jc)
         gw (- w 20)
         gh (- h 5)]
-    (.setBackground jc (Color. 0x203040))
     (dotimes [y gh]
       (dotimes [x gw]
-        (gui/draw jc x y (str x))))
+        (let [t (displayable-thing game x y 0)]
+          (.setForeground jc ^Color (:colour-fg t))
+          (.setBackground jc ^Color (:colour-bg t))
+          (gui/draw jc x y (char (:char t))))))
     (.repaint jc)))
 
 

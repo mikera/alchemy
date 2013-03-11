@@ -9,6 +9,9 @@
 ;; WORLD SIMULATION
 ;; everything internal to the game goes in here
 
+;; constants
+
+(def BLANK_TILE (thing lib/BLANK_TILE_PROPS))
 
 ;; ======================================================
 ;; key external functions (called by main namespace)

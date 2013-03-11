@@ -3,6 +3,15 @@
   (:use mikera.cljutils.error)
   (:use mikera.orculje.util))
 
+
+;; ===================================================
+;; library constants
+
+(def BLANK_TILE_PROPS {:is-tile true
+                       :char \space
+                       :colour-bg (colour 0x202020)
+                       :z-order (long -100)})
+
 ;; ===================================================
 ;; utility functions for library building
 
@@ -21,20 +30,26 @@
           parent (or
                    (objects parent-name)
                    (error "Parent not found: " parent-name))
+          obj (merge parent obj)
           object (merge obj {:name name
                              :parent-name parent-name})]
       (add-object lib object))))
+
+
 
 ;; ===================================================
 ;; library definitions - base
 
 (defn define-base [lib]
   (-> lib
+    ;; add base object in the library, has no parent
     (add-object 
       {:name "base object"
        :char \?
        :colour-fg (colour 0xFFFF00)
-       :colour-bg (colour 0x000000)}) ;; first object in the library, has no parent
+       :colour-bg (colour 0x000000)
+       :is-visible true
+       :z-order 0}) 
     (proclaim "base thing" "base object"
             {:id nil
              :is-thing true})))
@@ -44,13 +59,17 @@
 
 (defn define-tiles [lib]
   (-> lib
-    (proclaim "base tile" "base object" {:is-tile true})
+    (proclaim "base tile" "base object" 
+              {:is-tile true
+               :z-order 25})
     (proclaim "base wall" "base tile" 
               {:blocking true
-               :char (char 0x2593)})
+               :char (char 0x2593)
+               :z-order 50})
     (proclaim "base floor" "base tile" 
               {:blocking false
-               :char (char 0x00B7)})))
+               :char (char 0x00B7)
+               :z-order 0})))
 
 
 ;; ===================================================
@@ -71,14 +90,16 @@
     (proclaim "base creature" "base thing" 
                    {:is-mobile true
                     :is-blocking true                             
-                    :is-creature true})))
+                    :is-creature true
+                    :z-order 75})))
 
 (defn define-player [lib]
   (-> lib
     (proclaim "you" "base creature" 
                    {:is-player true
                     :char \@
-                    :colour-fg (colour 0xFFFFFF)})))
+                    :colour-fg (colour 0xFFFFFF)
+                    :z-order 100})))
 
 ;; ==============================================
 ;; library accessors

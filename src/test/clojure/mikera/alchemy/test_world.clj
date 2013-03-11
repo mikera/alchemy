@@ -6,7 +6,7 @@
 
 (deftest test-game
   (let [game (new-game)]
-    (assert (not (seq (things game 1 0 0))))
+    (assert (not (seq (get-things game 1 0 0))))
     (assert (some 
               #(= (:name %) "you")
               (lib/all-things game)))))
