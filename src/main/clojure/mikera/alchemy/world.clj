@@ -13,6 +13,16 @@
 
 (def BLANK_TILE (thing lib/BLANK_TILE_PROPS))
 
+
+;; ======================================================
+;; query functions
+
+(defn hero [game]
+  (get-thing game (:hero-id game)))
+
+(defn hero-location [game]
+  (:location (hero game)))
+
 ;; ======================================================
 ;; key external functions (called by main namespace)
 
@@ -20,7 +30,8 @@
   (as-> (empty-game) game
     (lib/setup game) 
     (add-thing game (loc 0 0 0) (lib/create game "you")) 
-    (merge game {:turn 0})))
+    (merge game {:turn 0
+                 :hero-id (:last-added-id game)})))
 
 (defn handle-command
   "Handles a command, expressed as a complete command String"

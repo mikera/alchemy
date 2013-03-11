@@ -132,9 +132,11 @@
 (defn new-state
   "Create a brand new game state."
   ([]
-    (let [state {:game (atom (world/new-game))
+    (let [game (world/new-game)
+          state {:game (atom game)
                  :console (new-console)
                  :frame (new-frame)
+                 :view-pos (world/hero-location game) 
                  :event-handler (atom nil)}]
       state)))
 
