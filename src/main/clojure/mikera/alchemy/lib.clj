@@ -87,6 +87,14 @@
   "Returns a list of all things possible in the game library"
   (vals (:objects (:lib game))))
 
+(defn create
+  "Creates a new thing using the library of the specified game"
+  ([game name]
+    (let [obj (:objects (:lib game))]
+      (if-let [props (obj name)]
+        (thing props)
+        (error "Can't find thing in library [" name "]" )))))
+
 ;; ==============================================
 ;; library main build
 

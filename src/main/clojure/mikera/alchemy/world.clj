@@ -14,9 +14,10 @@
 ;; key external functions (called by main namespace)
 
 (defn new-game []
-  (-> (empty-game)
-    (lib/setup) 
-    (merge {:turn 0})))
+  (as-> (empty-game) game
+    (lib/setup game) 
+    (add-thing game (loc 0 0 0) (lib/create game "you")) 
+    (merge game {:turn 0})))
 
 (defn handle-command
   "Handles a command, expressed as a complete command String"
