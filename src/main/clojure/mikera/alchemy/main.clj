@@ -1,6 +1,7 @@
 (ns mikera.alchemy.main
   (:use mikera.orculje.core)
   (:use mikera.cljutils.error)
+  (:use mikera.orculje.util)
   (:require [mikera.orculje.gui :as gui])
   (:require [mikera.alchemy.world :as world])
   (:import [javax.swing JFrame JComponent])
@@ -67,10 +68,22 @@
 	          (gui/draw jc x y (char (:char t))))))
 	    (.repaint jc))))
 
+(defn redraw-stats [state]
+  (let [^JConsole jc (:console state)
+	      game @(:game state) 
+        hero (world/hero game) 
+	      w (.getColumns jc)
+	      h (.getRows jc)
+	      gw 20
+	      gh (- h MESSAGE_WINDOW_HEIGHT)
+          ]
+    (.fillArea jc \space (colour 0xC0C0C0) (colour 0x301020) (int (- w gw)) (int 0) (int gw) (int gh))))
+
 (defn redraw-screen 
   "Redraw the main playing screen"
   ([state]
-    (redraw-world state)))
+    (redraw-world state)
+    (redraw-stats state)))
 
 ;; ========================================================
 ;; Input state handler functions

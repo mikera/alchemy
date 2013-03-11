@@ -106,7 +106,8 @@
                    {:is-mobile true
                     :is-blocking true                             
                     :is-creature true
-                    :z-order 75})))
+                    :z-order 75
+                    :SK 5 :ST 5 :AG 5 :TG 5 :IN 5 :WP 5 :CH 5 :CR 5})))
 
 (defn define-hero [lib]
   (-> lib
