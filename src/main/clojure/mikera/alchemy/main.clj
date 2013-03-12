@@ -13,9 +13,9 @@
 (set! *warn-on-reflection* true)
 (set! *unchecked-math* true)
 
-(def ^Font font (Font. "Courier New" Font/PLAIN 18))
+(def ^Font font (Font. "Courier New" Font/PLAIN 20))
 (def SCREEN_WIDTH 80)
-(def SCREEN_HEIGHT 40)
+(def SCREEN_HEIGHT 30)
 (def MESSAGE_WINDOW_HEIGHT 5) 
 
 (defn new-frame 
@@ -27,6 +27,7 @@
   (^JConsole []
     (let [jc (JConsole. SCREEN_WIDTH SCREEN_HEIGHT)]
       (.setMainFont jc font)
+      (.setFont jc font)
       (.setFocusable jc true)
       (.setCursorVisible jc false)
       (.setCursorBlink jc false)

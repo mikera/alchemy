@@ -93,7 +93,14 @@
                :z-order 20})))
 
 (defn define-potions [lib]
-  (-> lib))
+  (-> lib
+    (proclaim "base potion" "base item" 
+              {:is-potion true
+               :char (char \!)
+               :colour-fg (colour 0x0090B0) 
+               :z-order 25})
+    (proclaim "potion of healing" "base potion" 
+              {:colour-fg (colour 0x0090B0)})))
 
 (defn define-ingredients [lib]
   (-> lib
@@ -126,10 +133,10 @@
     (proclaim "base rat" "base creature" 
                    {:SK 4 :ST 3 :AG 6 :TG 2 :IN 1 :WP 5 :CH 2 :CR 2
                     :char \r
-                    :colour (colour 0x806050)})
+                    :colour-fg (colour 0xB0A090)})
     (proclaim "rat" "base rat" 
                    {:char \r
-                    :colour (colour 0x806050)})))
+                    :colour-fg (colour 0xB0A090)})))
 
 (defn define-hero [lib]
   (-> lib
