@@ -54,17 +54,22 @@
 	  (let [^JConsole jc (:console state)
 	        game @(:game state) 
           hero (engine/hero game) 
+          ^mikera.engine.BitGrid viz (or (:visibility game) (mikera.engine.BitGrid.))
           ^mikera.orculje.engine.Location hloc (:location hero) 
 	        w (.getColumns jc)
 	        h (.getRows jc)
-	        gw (- w 20)
-	        gh (- h MESSAGE_WINDOW_HEIGHT)
-         ox (long (- (.x hloc) (quot gw 2))) 
-         oy (long (- (.y hloc) (quot gh 2))) 
-         oz (long (.z hloc))]
+	        gw (int (- w 20))
+	        gh (int (- h MESSAGE_WINDOW_HEIGHT))
+          ox (long (- (.x hloc) (quot gw 2))) 
+          oy (long (- (.y hloc) (quot gh 2))) 
+          oz (long (.z hloc))]
 	    (dotimes [y gh]
 	      (dotimes [x gw]
-	        (let [t (displayable-thing game (+ ox x) (+ oy y) 0)]
+	        (let [tx (int (+ ox x)) 
+                ty (int (+ oy y))
+                t (if (.get viz tx ty (int oz))
+                    (displayable-thing game tx ty oz)
+                    world/BLANK_TILE)]
 	          (.setForeground jc ^Color (:colour-fg t))
 	          (.setBackground jc ^Color (:colour-bg t))
 	          (gui/draw jc x y (char (:char t))))))

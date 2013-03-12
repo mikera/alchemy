@@ -65,6 +65,7 @@
                :z-order 25})
     (proclaim "base wall" "base tile" 
               {:is-blocking true
+               :is-view-blocking true
                :colour-fg (colour 0x808080) 
                :colour-bg (colour 0x808000) 
                :char (char 0x2591)

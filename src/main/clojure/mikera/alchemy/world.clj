@@ -26,7 +26,8 @@
     (dungeon/generate game)
     (add-thing game (loc 0 0 0) (lib/create game "you")) 
     (merge game {:turn 0
-                 :hero-id (:last-added-id game)})))
+                 :hero-id (:last-added-id game)})
+    (engine/update-visibility game)))
 
 (defn monster-turn [game]
   ;; (println (str "Monster turn: " (:turn game)))
@@ -49,6 +50,7 @@
   ([game]
     (as-> game game
       (monster-turn game)
+      (engine/update-visibility game)
       (let [turn (:turn game)]
         ;; (println (str "Finished turn: " turn))
         (assoc game :turn (inc turn))))))

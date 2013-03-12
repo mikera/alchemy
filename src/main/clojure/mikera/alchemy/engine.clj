@@ -2,7 +2,12 @@
   (:require [mikera.cljutils.find :as find]) 
   (:use mikera.orculje.core)
   (:use mikera.cljutils.error)
+  (:require [mikera.orculje.engine :as en])
+  (:import [mikera.engine BitGrid])
   (:require[ mikera.orculje.text :as text]))
+
+(set! *warn-on-reflection* true)
+(set! *unchecked-math* true)
 
 ;; message logging
 
@@ -34,8 +39,33 @@
 (defn hero [game]
   (get-thing game (:hero-id game)))
 
-(defn hero-location [game]
+(defn hero-location ^mikera.orculje.engine.Location [game]
   (:location (hero game)))
+
+;; =======================================================
+;; vision
+
+(def LOS_RAYS 100)
+(def RAY_INC 0.33)
+(def RAY_LEN 15)
+
+(defn update-visibility [game]
+  (let [bg (BitGrid.)
+        hloc (hero-location game)
+        hx (.x hloc) hy (.y hloc) hz (.z hloc)]
+    (.set bg hx hy hz true)
+    (dotimes [i LOS_RAYS]
+      (let [dx (Math/sin (* i (/ (* 2.0 Math/PI) LOS_RAYS)))
+            dy (Math/cos (* i (/ (* 2.0 Math/PI) LOS_RAYS)))]
+        (loop [d 0.0]
+          (when (< d RAY_LEN)
+            (let [px (int (Math/round (+ hx (* dx d))))
+                  py (int (Math/round (+ hy (* dy d))))
+                  view-ok? (not (get-pred game (loc px py hz) :is-view-blocking))]
+              (when view-ok?
+                (.set bg px py hz true)
+                (recur (+ d RAY_INC))))))))
+    (assoc game :visibility bg)))
 
 ;; ======================================================
 ;; actions
