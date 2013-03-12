@@ -73,6 +73,11 @@
     (extend-visibility bg)
     (assoc game :visibility bg)))
 
+(defn is-square-visible? [^mikera.orculje.engine.Game game 
+                          ^mikera.orculje.engine.Location loc]
+  (let [^BitGrid viz (:visibility game)]
+    (.get viz (.x loc) (.y loc) (.z loc))))
+
 ;; ======================================================
 ;; actions
 
