@@ -27,15 +27,6 @@
         (assoc game :messages new-msgs)
         (assoc game :message-log new-mlog)))))
 
-(defn get-blocking 
-  "Gets the object blocking a specific square"
-  ([game loc]
-    (let [ts (get-things game loc)
-          tl (get-tile game loc)]
-      (or 
-        (find/find-first :is-blocking ts)
-        (if (:is-blocking tl) tl nil))))) 
-
 (defn try-attack [game thing target]
   (message game thing (str (text/verb-phrase :the thing "attack" :the target))))
 

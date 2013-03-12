@@ -115,13 +115,22 @@
                    {:is-mobile true
                     :is-blocking true                             
                     :is-creature true
+                    :is-hostile true
                     :z-order 75
-                    :SK 5 :ST 5 :AG 5 :TG 5 :IN 5 :WP 5 :CH 5 :CR 5})))
+                    :SK 5 :ST 5 :AG 5 :TG 5 :IN 5 :WP 5 :CH 5 :CR 5})
+    (proclaim "base rat" "base creature" 
+                   {:SK 4 :ST 3 :AG 6 :TG 2 :IN 1 :WP 5 :CH 2 :CR 2
+                    :char \r
+                    :colour (colour 0x806050)})
+    (proclaim "rat" "base rat" 
+                   {:char \r
+                    :colour (colour 0x806050)})))
 
 (defn define-hero [lib]
   (-> lib
     (proclaim "you" "base creature" 
                    {:is-hero true
+                    :is-hostile false
                     :grammatical-person :second
                     :char \@
                     :colour-fg (colour 0xFFFFFF)
