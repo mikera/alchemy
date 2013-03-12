@@ -122,6 +122,7 @@
   (-> lib
     (proclaim "you" "base creature" 
                    {:is-hero true
+                    :grammatical-person :second
                     :char \@
                     :colour-fg (colour 0xFFFFFF)
                     :z-order 100})))
