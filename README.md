@@ -7,7 +7,11 @@ by Mike Anderson
 
 ## Story
 
-    You are a talented young alchemist. You discover that the fabled Philosopher's Stone is hidden at the bottom of an old dungeon. What luck! All you have to do is descend and grab the stone before your rivals catch the scent. What could possibly go wrong?
+    You are a talented young alchemist. You discover that the fabled Philosopher's 
+    Stone is hidden at the bottom of an old dungeon. What luck! All you have to do 
+    is descend and grab the stone before your rivals catch the scent. 
+    
+    What could possibly go wrong?
 
 ## Build instructions
 
