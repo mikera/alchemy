@@ -10,6 +10,7 @@
 
 (def BLANK_TILE_PROPS {:is-tile true
                        :char \space
+                       :colour-fg (colour 0x202020)
                        :colour-bg (colour 0x202020)
                        :z-order (long -100)})
 

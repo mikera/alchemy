@@ -62,7 +62,7 @@
     (dotimes [i LOS_RAYS]
       (let [dx (Math/sin (* i (/ (* 2.0 Math/PI) LOS_RAYS)))
             dy (Math/cos (* i (/ (* 2.0 Math/PI) LOS_RAYS)))]
-        (loop [d 0.0]
+        (loop [d 1.0]
           (when (< d RAY_LEN)
             (let [px (int (Math/round (+ hx (* dx d))))
                   py (int (Math/round (+ hy (* dy d))))

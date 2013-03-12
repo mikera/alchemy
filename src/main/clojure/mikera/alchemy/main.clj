@@ -48,6 +48,19 @@
             (recur z-order ct (next ts))))
         ct))))
 
+(defn shade-colour 
+  "Produces a fade to black over distance"
+  ([^Color c ^double d2]
+    (let [BD 20.0
+          p (/ BD (+ BD d2))]
+      (if (< p 1.0)
+        (let [p (/ p 255.0)
+              r (float (* p (.getRed c)))
+              g (float (* p (.getGreen c)))
+              b (float (* p (.getBlue c)))]
+          (Color. r g b (float 1.0)))
+        c))))
+
 (defn redraw-world 
   "Redraws the game world playing area"
   ([state]
@@ -58,20 +71,28 @@
           ^mikera.orculje.engine.Location hloc (:location hero) 
 	        w (.getColumns jc)
 	        h (.getRows jc)
+          hx (.x hloc) hy (.y hloc) hz (.z hloc) 
 	        gw (int (- w 20))
 	        gh (int (- h MESSAGE_WINDOW_HEIGHT))
-          ox (long (- (.x hloc) (quot gw 2))) 
-          oy (long (- (.y hloc) (quot gh 2))) 
-          oz (long (.z hloc))]
+          ox (long (- hx (quot gw 2))) 
+          oy (long (- hy (quot gh 2))) 
+          oz (long hz)]
 	    (dotimes [y gh]
 	      (dotimes [x gw]
 	        (let [tx (int (+ ox x)) 
                 ty (int (+ oy y))
-                t (if (.get viz tx ty (int oz))
+                d2 (let [dx (- hx tx) dy (- hy ty)] (+ (* dx dx) (* dy dy)))
+                visible? (.get viz tx ty hz)
+                t (if visible?
                     (displayable-thing game tx ty oz)
-                    world/BLANK_TILE)]
-	          (.setForeground jc ^Color (:colour-fg t))
-	          (.setBackground jc ^Color (:colour-bg t))
+                    world/BLANK_TILE)
+                t (or t world/BLANK_TILE)
+                ^Color fg (or (:colour-fg t) (error "No foreground colour! on " (:name t)))
+                ^Color bg (or (:colour-bg t) (error "No foreground colour! on " (:name t)))
+                ^Color fg (if visible? (shade-colour fg d2) fg)
+                ^Color bg (if visible? (shade-colour bg d2) bg)]
+	          (.setForeground jc fg)
+	          (.setBackground jc bg)
 	          (gui/draw jc x y (char (:char t))))))
 	    (.repaint jc))))
 
