@@ -49,6 +49,11 @@
 (def RAY_INC 0.33)
 (def RAY_LEN 15)
 
+(defn extend-visibility 
+  "Extends visibility by 1 in all directions: needed to see walls / above / below"
+  ([^BitGrid bg]
+    (.visitSetBits bg (mikera.alchemy.BitGridExtender. bg))))
+
 (defn update-visibility [game]
   (let [bg (BitGrid.)
         hloc (hero-location game)
@@ -65,6 +70,7 @@
               (when view-ok?
                 (.set bg px py hz true)
                 (recur (+ d RAY_INC))))))))
+    (extend-visibility bg)
     (assoc game :visibility bg)))
 
 ;; ======================================================

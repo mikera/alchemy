@@ -54,7 +54,7 @@
 	  (let [^JConsole jc (:console state)
 	        game @(:game state) 
           hero (engine/hero game) 
-          ^mikera.engine.BitGrid viz (or (:visibility game) (mikera.engine.BitGrid.))
+          ^mikera.engine.BitGrid viz (or (:visibility game) (error "No visibility defined!"))
           ^mikera.orculje.engine.Location hloc (:location hero) 
 	        w (.getColumns jc)
 	        h (.getRows jc)
