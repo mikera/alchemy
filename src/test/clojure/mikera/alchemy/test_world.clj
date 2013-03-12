@@ -9,4 +9,4 @@
     (assert (not (seq (get-things game 1 0 0))))
     (assert (some 
               #(= (:name %) "you")
-              (lib/all-things game)))))
+              (lib/all-library-things game)))))

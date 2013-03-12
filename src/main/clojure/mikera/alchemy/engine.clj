@@ -16,7 +16,7 @@
     game))
 
 (defn message
-  "Send a message to a given thing. Should be displaiyed iff it is the hero."
+  "Send a message to a given thing. Should be displayed iff it is the hero."
   ([game thing & ss]
     (let [ss (map text/capitalise ss)
           msgs (or (:messages game) [])
@@ -26,6 +26,19 @@
       (as-> game game
         (assoc game :messages new-msgs)
         (assoc game :message-log new-mlog)))))
+
+
+;; ======================================================
+;; query functions
+
+(defn hero [game]
+  (get-thing game (:hero-id game)))
+
+(defn hero-location [game]
+  (:location (hero game)))
+
+;; ======================================================
+;; actions
 
 (defn try-attack [game thing target]
   (message game thing (str (text/verb-phrase :the thing "attack" :the target))))
@@ -38,6 +51,10 @@
       (try-attack game thing target)
     :else
       (error "Don't know hot to touch: " target)))
+
+(defn monster-action 
+  ([game m]
+    game))
 
 (defn try-move
   [game thing loc]

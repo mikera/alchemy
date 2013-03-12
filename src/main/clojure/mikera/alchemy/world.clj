@@ -18,20 +18,6 @@
 
 
 ;; ======================================================
-;; query functions
-
-(defn hero [game]
-  (get-thing game (:hero-id game)))
-
-(defn hero-location [game]
-  (:location (hero game)))
-
-;; ======================================================
-;; action functions
-
-
-
-;; ======================================================
 ;; key external functions (called by main namespace)
 
 (defn new-game []
@@ -42,16 +28,35 @@
     (merge game {:turn 0
                  :hero-id (:last-added-id game)})))
 
+(defn monster-turn [game]
+  ;; (println (str "Monster turn: " (:turn game)))
+  (loop [game game
+         obs (seq (all-things game))]
+    (if obs
+      (let [o (get-thing game (first obs))]
+        (if-let [mfn (:on-action o)]
+          (do
+            ;; (println o)
+            (if 
+              (and (> (or (:aps o) 0) 0) true)
+              (recur (mfn game o) (next obs))
+              (recur game (next obs))))
+          (recur game (next obs))))
+      game)))
+
 (defn end-turn 
   "Called to update the game after every player turn"
   ([game]
     (as-> game game
-      (assoc game :turn (inc (:turn game))))))
+      (monster-turn game)
+      (let [turn (:turn game)]
+        ;; (println (str "Finished turn: " turn))
+        (assoc game :turn (inc turn))))))
 
 (defn handle-move 
   "Handles a hero move"
   [game dir]
-  (let [h (hero game)]
+  (let [h (engine/hero game)]
     (as-> game game
       (engine/clear-messages game)
       (engine/try-move game h (loc-add (:location h) dir))

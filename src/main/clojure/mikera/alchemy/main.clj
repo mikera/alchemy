@@ -4,6 +4,7 @@
   (:use mikera.orculje.util)
   (:require [mikera.orculje.gui :as gui])
   (:require [mikera.alchemy.world :as world])
+  (:require [mikera.alchemy.engine :as engine])
   (:import [javax.swing JFrame JComponent])
   (:import [java.awt.event KeyEvent])
   (:import [java.awt Font Color])
@@ -52,7 +53,7 @@
   ([state]
 	  (let [^JConsole jc (:console state)
 	        game @(:game state) 
-          hero (world/hero game) 
+          hero (engine/hero game) 
           ^mikera.orculje.engine.Location hloc (:location hero) 
 	        w (.getColumns jc)
 	        h (.getRows jc)
@@ -89,7 +90,7 @@
 (defn redraw-stats [state]
   (let [^JConsole jc (:console state)
 	      game @(:game state) 
-        hero (world/hero game) 
+        hero (engine/hero game) 
 	      w (.getColumns jc)
 	      h (.getRows jc)
 	      gw 20
@@ -193,7 +194,7 @@
           state {:game (atom game)
                  :console (new-console)
                  :frame (new-frame)
-                 :view-pos (world/hero-location game) 
+                 :view-pos (engine/hero-location game) 
                  :event-handler (atom nil)}]
       state)))
 

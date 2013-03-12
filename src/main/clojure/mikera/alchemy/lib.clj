@@ -1,7 +1,8 @@
 (ns mikera.alchemy.lib
   (:use mikera.orculje.core)
   (:use mikera.cljutils.error)
-  (:use mikera.orculje.util))
+  (:use mikera.orculje.util)
+  (:require [mikera.alchemy.engine :as engine]))
 
 
 ;; ===================================================
@@ -116,6 +117,8 @@
                     :is-blocking true                             
                     :is-creature true
                     :is-hostile true
+                    :on-action engine/monster-action
+                    :aps 0
                     :z-order 75
                     :SK 5 :ST 5 :AG 5 :TG 5 :IN 5 :WP 5 :CH 5 :CR 5})
     (proclaim "base rat" "base creature" 
@@ -131,6 +134,7 @@
     (proclaim "you" "base creature" 
                    {:is-hero true
                     :is-hostile false
+                    :on-action nil
                     :grammatical-person :second
                     :char \@
                     :colour-fg (colour 0xFFFFFF)
@@ -139,7 +143,7 @@
 ;; ==============================================
 ;; library accessors
 
-(defn all-things [game]
+(defn all-library-things [game]
   "Returns a list of all things possible in the game library"
   (vals (:objects (:lib game))))
 
