@@ -92,9 +92,18 @@
 (defn define-potions [lib]
   (-> lib))
 
+(defn define-ingredients [lib]
+  (-> lib
+    (proclaim "base ingredient" "base item" 
+              {:is-item true
+               :char (char 0x2663)
+               :colour-fg (colour 0x008000) 
+               :z-order 20})))
+
 (defn define-items [lib]
   (-> lib
     (define-base-item)
+    (define-ingredients)
     (define-potions)))
 
 ;; ===================================================

@@ -32,7 +32,8 @@
       jc)))
 
 (defn displayable-thing 
-  "Gets the thing that should be displayed in a given square (i.e. highest z-order of all visible things)"
+  "Gets the thing that should be displayed in a given square 
+   (i.e. highest z-order of all visible things)"
   [game ^long x ^long y ^long z]
   (let [t (or (get-tile game x y z) world/BLANK_TILE)]
     (loop [z-order (long -100)

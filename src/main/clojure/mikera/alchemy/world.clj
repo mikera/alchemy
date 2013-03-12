@@ -1,5 +1,7 @@
 (ns mikera.alchemy.world
+  (:require [mikera.alchemy.engine :as engine])
   (:require [mikera.alchemy.lib :as lib]) 
+  (:require [mikera.cljutils.find :as find]) 
   (:require [mikera.alchemy.dungeon :as dungeon]) 
   (:use mikera.orculje.core))
 
@@ -25,6 +27,11 @@
   (:location (hero game)))
 
 ;; ======================================================
+;; action functions
+
+
+
+;; ======================================================
 ;; key external functions (called by main namespace)
 
 (defn new-game []
@@ -46,7 +53,7 @@
   [game dir]
   (let [h (hero game)]
     (as-> game game
-      (move-thing game h (loc-add (:location h) dir))
+      (engine/try-move game h (loc-add (:location h) dir))
       (end-turn game))))
 
 (defn handle-command
