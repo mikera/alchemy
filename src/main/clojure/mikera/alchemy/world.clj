@@ -53,6 +53,7 @@
   [game dir]
   (let [h (hero game)]
     (as-> game game
+      (engine/clear-messages game)
       (engine/try-move game h (loc-add (:location h) dir))
       (end-turn game))))
 
@@ -60,6 +61,7 @@
   "Handles a command, expressed as a complete command String"
   [game k]
   (as-> game game
+    (engine/clear-messages game)
     (cond
       :else (do 
               (println (str "Turn " (:turn game) " unhandled command [" k "]")) 

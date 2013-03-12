@@ -69,6 +69,23 @@
 	          (gui/draw jc x y (char (:char t))))))
 	    (.repaint jc))))
 
+(defn redraw-messages [state]
+  (let [^JConsole jc (:console state)
+	      game @(:game state) 
+        w (.getColumns jc)
+	      h (.getRows jc)
+        mh MESSAGE_WINDOW_HEIGHT
+        sy (- h mh)
+        msgs (:messages game)
+        cm (count msgs)
+        more-msgs? (> cm mh)]
+    (.fillArea jc \space (colour 0xC0C0C0) (colour 0x000000) (int 0) (int sy) (int w) (int mh))
+	  (.setForeground jc ^Color (colour 0xC0C0C0))
+	  (.setBackground jc ^Color (colour 0x000000))
+    (dotimes [i (if more-msgs? (dec mh) cm)]
+      (gui/draw jc 0 (+ sy i) (msgs i)))
+    (if more-msgs? (gui/draw jc 0 (+ sy (dec mh)) "[press m to see more messages]"))))
+
 (defn redraw-stats [state]
   (let [^JConsole jc (:console state)
 	      game @(:game state) 
@@ -84,6 +101,7 @@
   "Redraw the main playing screen"
   ([state]
     (redraw-world state)
+    (redraw-messages state)
     (redraw-stats state)))
 
 ;; ========================================================
