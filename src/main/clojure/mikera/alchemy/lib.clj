@@ -2,7 +2,9 @@
   (:use mikera.orculje.core)
   (:use mikera.cljutils.error)
   (:use mikera.orculje.util)
-  (:require [mikera.alchemy.engine :as engine]))
+  (:use mikera.orculje.text)
+  (:require [mikera.alchemy.engine :as engine])
+  (:import [mikera.util Rand]))
 
 
 ;; ===================================================
@@ -50,6 +52,7 @@
        :char \?
        :colour-fg (colour 0xFFFF00)
        :colour-bg (colour 0x000000)
+       :freq 1.0
        :is-visible true
        :z-order 0}) 
     (proclaim "base thing" "base object"
@@ -89,7 +92,7 @@
     (proclaim "base scenery" "base thing" 
               {:is-scenery true
                :is-view-blocking false
-               :is-closed true
+               :is-blocking true
                :char (char \#)
                :z-order 60})))
 
@@ -131,9 +134,19 @@
                                    :is-blocking true
                                    :is-view-blocking false} })))
 
+(defn define-apparatus [lib]
+  (-> lib
+    (proclaim "base apparatus" "base scenery" 
+              {:is-apparatus true
+               :on-use (fn [game app actor]
+                         (engine/message game actor (str "You don't know how to use " (the-name game app) ".")))})
+    (proclaim "alchemy bench" "base apparatus" 
+              {:char (char 0x046C)})))
+
 (defn define-scenery [lib]
   (-> lib
     (define-base-scenery)
+    (define-apparatus)
     (define-doors)))
 
 ;; ===================================================
@@ -201,11 +214,26 @@
                     :SK 5 :ST 5 :AG 5 :TG 5 :IN 5 :WP 5 :CH 5 :CR 5})
     (proclaim "base rat" "base creature" 
                    {:SK 4 :ST 3 :AG 6 :TG 2 :IN 1 :WP 5 :CH 2 :CR 2
+                    :hps 3
                     :char \r
                     :colour-fg (colour 0xB0A090)})
     (proclaim "rat" "base rat" 
-                   {:char \r
-                    :colour-fg (colour 0xB0A090)})))
+                   {:level-min 1})
+    (proclaim "base snake" "base creature" 
+                   {:SK 5 :ST 3 :AG 8 :TG 4 :IN 2 :WP 6 :CH 4 :CR 1
+                    :is-reptile true
+                    :hps 3
+                    :char \s
+                    :level-min 1
+                    :colour-fg (colour 0x60C060)})
+    (proclaim "grass snake" "base snake"
+                   {})
+    (proclaim "cobra" "base snake"
+                   {:SK 9 :ST 6 :AG 10 :TG 7 :IN 4 :WP 9 :CH 8 :CR 3
+                    :char \c
+                    :hps 15
+                    :level-min 4
+                    :colour-fg (colour 0xD0A060)})))
 
 (defn define-hero [lib]
   (-> lib
@@ -213,6 +241,7 @@
                    {:is-hero true
                     :is-hostile false
                     :on-action nil
+                    :hps 15
                     :grammatical-person :second
                     :char \@
                     :colour-fg (colour 0xFFFFFF)
@@ -225,15 +254,30 @@
   "Returns a list of all things possible in the game library"
   (vals (:objects (:lib game))))
 
+(defn create-type 
+  [game pred]
+  (let [objs (seq (vals (:objects (:lib game))))]
+    (loop [v nil cumfreq 0.0 objs objs]
+      (if objs
+        (let [o (first objs)
+              freq-o (if (pred o) (double (:freq o)) 0.0)
+              keeper? (< (* (Rand/nextDouble) (+ cumfreq freq-o)) freq-o)]
+          (recur (if keeper? o v) (+ cumfreq freq-o) (next objs)))
+        (thing v)))))
+
 (defn create
   "Creates a new thing using the library of the specified game"
-  ([game name]
+  ([game ^String name]
     (let [obj (:objects (:lib game))]
       (if-let [props (obj name)]
         (if-let [on-create (:on-create props)]
           (thing (on-create props))
           (thing props))
-        (error "Can't find thing in library [" name "]" )))))
+        (cond 
+          (.startsWith name "[")
+            (create-type game (keyword (.substring name 2 (dec (count name)))))
+          :else
+            (error "Can't find thing in library [" name "]" ))))))
 
 ;; ==============================================
 ;; library main build
@@ -246,10 +290,19 @@
     (define-creatures)
     (define-hero)))
 
+(defn post-process 
+  ([objects]
+    (into {}
+          (map (fn [[k v]]
+                 [k (if (.startsWith (:name v) "base ") (assoc v :freq 0.0) v)])
+               objects))))
+
 (defn build-lib []
-  (let [lib {:objects {} ;; map of object name to properties
-             }]
-    (define-objects lib)))
+  (as-> {:objects {} ;; map of object name to properties
+         } 
+        lib 
+    (define-objects lib)
+    (assoc lib :objects (post-process (:objects lib)))))
 
 (defn setup 
   "Sets up the object library for a given game"

@@ -81,12 +81,21 @@
 ;; ======================================================
 ;; actions
 
+(defn wait [game actor]
+  (!+ game actor :aps -100))
+
 (defn try-open [game actor door]
   (as-> game game
     (if (? door :is-locked)
       (message game actor (str (text/verb-phrase :the door) " is locked."))
       ((:on-open door) game door actor))    
     (!+ game actor :aps -100)))
+
+(defn try-use [game actor thing]
+  (as-> game game
+    (if-let [on-use (? thing :on-use)]
+      (on-use game thing actor)
+      (message game actor (str "You have no idea what to do with " (text/the-name thing) ".")))))
 
 (defn try-attack [game thing target]
   (as-> game game
@@ -102,7 +111,7 @@
     (:is-door target)
       (try-open game thing target)
     :else
-      (error "Don't know hot to touch: " target)))
+      (try-use game thing target)))
 
 
 (defn try-move
@@ -110,7 +119,7 @@
   (if-let [target (get-blocking game loc)]
     (try-bump game thing target)
     (as-> game game
-      (! game thing :aps (- (? thing :aps) 100))    
+      (!+ game thing :aps -100)    
       (move-thing game thing loc))))
 
 ;; ===================================================
