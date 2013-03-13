@@ -45,14 +45,14 @@
 ;; =======================================================
 ;; vision
 
-(def LOS_RAYS 100)
-(def RAY_INC 0.33)
-(def RAY_LEN 15)
-
 (defn extend-visibility 
   "Extends visibility by 1 in all directions: needed to see walls / above / below"
   ([^BitGrid bg]
     (.visitSetBits bg (mikera.alchemy.BitGridExtender. bg))))
+
+(def LOS_RAYS 100)
+(def RAY_INC 0.33)
+(def RAY_LEN 15)
 
 (defn update-visibility [game]
   (let [bg (BitGrid.)
@@ -70,7 +70,7 @@
               (when view-ok?
                 (.set bg px py hz true)
                 (recur (+ d RAY_INC))))))))
-    (extend-visibility bg)
+    (extend-visibility bg) ;; extend visibility by 1 square in all directions
     (assoc game :visibility bg)))
 
 (defn is-square-visible? [^mikera.orculje.engine.Game game 

@@ -52,7 +52,7 @@
 (defn shade-colour 
   "Produces a fade to black over distance"
   ([^Color c ^double d2]
-    (let [BD 30.0
+    (let [BD 50.0
           p (/ BD (+ BD d2))]
       (if (< p 1.0)
         (let [p (/ p 255.0)

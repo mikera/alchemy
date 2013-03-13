@@ -90,30 +90,44 @@
     (proclaim "base item" "base thing" 
               {:is-item true
                :char (char \%)
-               :z-order 20})))
-
-(defn define-potions [lib]
-  (-> lib
+               :z-order 20})
+    (proclaim "base ingredient" "base item" 
+              {:is-item true
+               :char (char 0x2663)
+               :colour-fg (colour 0x008000) 
+               :z-order 20})
     (proclaim "base potion" "base item" 
               {:is-potion true
                :char (char \!)
                :colour-fg (colour 0x0090B0) 
                :z-order 25})
+    (proclaim "base food" "base ingredient" 
+              {:is-food true
+               :char (char 0x2663)
+               :food-value 100
+               :colour-fg (colour 0xC00000) 
+               :z-order 20})))
+
+(defn define-potions [lib]
+  (-> lib
+    
     (proclaim "potion of healing" "base potion" 
               {:colour-fg (colour 0x0090B0)})))
 
 (defn define-ingredients [lib]
   (-> lib
-    (proclaim "base ingredient" "base item" 
-              {:is-item true
-               :char (char 0x2663)
-               :colour-fg (colour 0x008000) 
-               :z-order 20})))
+    ))
+
+(defn define-food [lib]
+  (-> lib
+    (proclaim "slime mould" "base food" 
+              {:food-value 100})))
 
 (defn define-items [lib]
   (-> lib
     (define-base-item)
     (define-ingredients)
+    (define-food)
     (define-potions)))
 
 ;; ===================================================
