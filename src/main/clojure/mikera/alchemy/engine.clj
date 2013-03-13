@@ -81,9 +81,16 @@
 ;; ======================================================
 ;; actions
 
+(defn try-open [game actor door]
+  (as-> game game
+    (if (? door :is-locked)
+      (message game actor (str (text/verb-phrase :the door) " is locked."))
+      ((:on-open door) game door actor))    
+    (!+ game actor :aps -100)))
+
 (defn try-attack [game thing target]
   (as-> game game
-    (message game thing (str (text/verb-phrase :the thing "attack" :the target)))
+    (message game thing (str (text/verb-phrase :the thing "attack" :the target) "!"))
     (!+ game thing :aps -100)))
 
 (defn try-bump [game thing target]
@@ -92,6 +99,8 @@
       (message game thing (str (text/verb-phrase :the thing "run") " into a wall."))
     (:is-creature target)
       (try-attack game thing target)
+    (:is-door target)
+      (try-open game thing target)
     :else
       (error "Don't know hot to touch: " target)))
 
@@ -108,8 +117,9 @@
 ;; "AI"
 
 (defn monster-action 
+  "Performs one action for a monster. Assume this function only called if monster has sufficient aps." 
   ([game m]
-    (println (str "monster thinking: " (:name m)))
+    ;; (println (str "monster thinking: " (:name m)))
     (let [m (get-thing game m)
           loc (location game m)]
       (if (is-square-visible? game loc)

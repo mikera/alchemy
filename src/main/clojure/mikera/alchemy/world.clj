@@ -36,12 +36,15 @@
     (if obs
       (let [o (get-thing game (first obs))]
         (if-let [mfn (:on-action o)]
-          (let [new-aps (+ (:aps o) aps-added)
-                game (if (== aps-added 0) game (! game o :aps new-aps))]
-            ;; (println o)
-            (if (> new-aps 0)
-              (recur (mfn game o) (next obs))
-              (recur game (next obs))))
+          (recur
+            (let [new-aps (+ (:aps o) aps-added)
+	                game (if (== aps-added 0) game (! game o :aps new-aps))]
+	            ;; (println o)
+	            
+	            (if (> new-aps 0)
+	                (mfn game o)
+	                game))
+            (next obs))
           (recur game (next obs))))
       game)))
 
@@ -58,7 +61,7 @@
               ;; (println (str "Finished turn: " turn))
               (assoc game :turn (inc turn)))
             (! game hero :aps 0)
-            (do (println "Turn ended") game)
+            ;;(do (println "Turn ended") game)
             ))))
 
 (defn handle-move 

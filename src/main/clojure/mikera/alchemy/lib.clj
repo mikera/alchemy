@@ -81,6 +81,60 @@
               {:colour-fg (colour 0xC08040)
                :colour-bg (colour 0x804000)})))
 
+;; ===================================================
+;; Library-definitions - scenery
+
+(defn define-base-scenery [lib]
+  (-> lib
+    (proclaim "base scenery" "base thing" 
+              {:is-scenery true
+               :is-view-blocking false
+               :is-closed true
+               :char (char \#)
+               :z-order 60})))
+
+(defn define-doors [lib]
+  (-> lib
+    (proclaim "base door" "base scenery" 
+              {:is-door true
+               :closed-properties {:char (char 0x256C)                             
+                                   :is-open false
+                                   :colour-fg (colour 0x000000) 
+                                   :colour-bg (colour 0xC07020)
+                                   :is-blocking true
+                                   :is-view-blocking true} 
+               :open-properties {:char (char 0x2551)
+                                 :is-open true
+                                 :is-locked false
+                                 :colour-bg (colour 0x000000) 
+                                 :colour-fg (colour 0xC07020)
+                                 :is-blocking false
+                                 :is-view-blocking false
+                                 }
+               :on-open (fn [game door actor]
+                          (update-thing game (merge door
+                                                    (if (? door :is-open)
+                                                      (? door :closed-properties)
+                                                      (? door :open-properties))))) 
+               :on-create (fn [door]
+                            (merge door ((if (:is-open door) :open-properties :closed-properties) door)))
+               :z-order 70})
+    (proclaim "door" "base door" 
+              {})
+    (proclaim "grille" "base door" 
+              {:is-locked true
+               :closed-properties {:char \#                            
+                                   :is-open false
+                                   :is-locked true
+                                   :colour-fg (colour 0x909090) 
+                                   :colour-bg (colour 0x000000)
+                                   :is-blocking true
+                                   :is-view-blocking false} })))
+
+(defn define-scenery [lib]
+  (-> lib
+    (define-base-scenery)
+    (define-doors)))
 
 ;; ===================================================
 ;; library definitions - items
@@ -126,6 +180,7 @@
 (defn define-items [lib]
   (-> lib
     (define-base-item)
+    (define-scenery)
     (define-ingredients)
     (define-food)
     (define-potions)))
@@ -175,7 +230,9 @@
   ([game name]
     (let [obj (:objects (:lib game))]
       (if-let [props (obj name)]
-        (thing props)
+        (if-let [on-create (:on-create props)]
+          (thing (on-create props))
+          (thing props))
         (error "Can't find thing in library [" name "]" )))))
 
 ;; ==============================================
