@@ -88,17 +88,30 @@
   (cond
     (:is-tile target)
       (message game thing (str (text/verb-phrase :the thing "run") " into a wall."))
-    (:is-hostile target)
+    (:is-creature target)
       (try-attack game thing target)
     :else
       (error "Don't know hot to touch: " target)))
 
-(defn monster-action 
-  ([game m]
-    game))
 
 (defn try-move
   [game thing loc]
   (if-let [target (get-blocking game loc)]
     (try-bump game thing target)
-    (move-thing game thing loc)))
+    (as-> game game
+      (! game thing :aps (- (? thing :aps) 100))    
+      (move-thing game thing loc))))
+
+;; ===================================================
+;; "AI"
+
+(defn monster-action 
+  ([game m]
+    (println (str "monster thinking: " (:name m)))
+    (let [loc (location game m)]
+      (if (is-square-visible? game loc)
+        (let [hloc (hero-location game)
+              dir (direction loc hloc)
+              tloc (loc-add loc dir)]
+          (try-move game m tloc))
+        game))))

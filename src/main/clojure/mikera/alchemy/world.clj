@@ -29,17 +29,18 @@
                  :hero-id (:last-added-id game)})
     (engine/update-visibility game)))
 
-(defn monster-turn [game]
+(defn monster-turn [game aps-added]
   ;; (println (str "Monster turn: " (:turn game)))
   (loop [game game
          obs (seq (all-things game))]
     (if obs
       (let [o (get-thing game (first obs))]
         (if-let [mfn (:on-action o)]
-          (do
+          (let [new-aps (+ (:aps o) aps-added)
+                game (! game o :aps new-aps)]
             ;; (println o)
             (if 
-              (and (> (or (:aps o) 0) 0) true)
+              (and (> new-aps 0) true)
               (recur (mfn game o) (next obs))
               (recur game (next obs))))
           (recur game (next obs))))
@@ -49,7 +50,9 @@
   "Called to update the game after every player turn"
   ([game]
     (as-> game game
-      (monster-turn game)
+      (monster-turn game (- (:aps (engine/hero game))))
+      (monster-turn game 0)
+      (monster-turn game 0)
       (engine/update-visibility game)
       (let [turn (:turn game)]
         ;; (println (str "Finished turn: " turn))
@@ -62,7 +65,8 @@
     (as-> game game
       (engine/clear-messages game)
       (engine/try-move game h (loc-add (:location h) dir))
-      (end-turn game))))
+      (end-turn game)
+      (! game h :aps 0))))
 
 (defn handle-command
   "Handles a command, expressed as a complete command String"
