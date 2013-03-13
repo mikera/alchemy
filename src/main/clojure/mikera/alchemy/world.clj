@@ -37,10 +37,9 @@
       (let [o (get-thing game (first obs))]
         (if-let [mfn (:on-action o)]
           (let [new-aps (+ (:aps o) aps-added)
-                game (! game o :aps new-aps)]
+                game (if (== aps-added 0) game (! game o :aps new-aps))]
             ;; (println o)
-            (if 
-              (and (> new-aps 0) true)
+            (if (> new-aps 0)
               (recur (mfn game o) (next obs))
               (recur game (next obs))))
           (recur game (next obs))))
@@ -49,14 +48,18 @@
 (defn end-turn 
   "Called to update the game after every player turn"
   ([game]
-    (as-> game game
-      (monster-turn game (- (:aps (engine/hero game))))
-      (monster-turn game 0)
-      (monster-turn game 0)
-      (engine/update-visibility game)
-      (let [turn (:turn game)]
-        ;; (println (str "Finished turn: " turn))
-        (assoc game :turn (inc turn))))))
+    (let [hero (engine/hero game)]
+      (as-> game game
+            (monster-turn game (- (:aps hero)))
+            (monster-turn game 0)
+            (monster-turn game 0)
+            (engine/update-visibility game)
+            (let [turn (:turn game)]
+              ;; (println (str "Finished turn: " turn))
+              (assoc game :turn (inc turn)))
+            (! game hero :aps 0)
+            (do (println "Turn ended") game)
+            ))))
 
 (defn handle-move 
   "Handles a hero move"
@@ -65,8 +68,7 @@
     (as-> game game
       (engine/clear-messages game)
       (engine/try-move game h (loc-add (:location h) dir))
-      (end-turn game)
-      (! game h :aps 0))))
+      (end-turn game))))
 
 (defn handle-command
   "Handles a command, expressed as a complete command String"

@@ -82,7 +82,9 @@
 ;; actions
 
 (defn try-attack [game thing target]
-  (message game thing (str (text/verb-phrase :the thing "attack" :the target))))
+  (as-> game game
+    (message game thing (str (text/verb-phrase :the thing "attack" :the target)))
+    (!+ game thing :aps -100)))
 
 (defn try-bump [game thing target]
   (cond
@@ -108,7 +110,8 @@
 (defn monster-action 
   ([game m]
     (println (str "monster thinking: " (:name m)))
-    (let [loc (location game m)]
+    (let [m (get-thing game m)
+          loc (location game m)]
       (if (is-square-visible? game loc)
         (let [hloc (hero-location game)
               dir (direction loc hloc)
