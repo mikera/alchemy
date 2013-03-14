@@ -18,7 +18,7 @@
 (def SCREEN_WIDTH 80)
 (def SCREEN_HEIGHT 30)
 (def RIGHT_AREA_WIDTH 0) 
-(def MESSAGE_WINDOW_HEIGHT 2) 
+(def STATUS_BAR_HEIGHT 2) 
 (def MAX_DISPLAYED_MESSAGES 5)
 
 (declare main-handler) 
@@ -82,7 +82,7 @@
 	        h (.getRows jc)
           hx (.x hloc) hy (.y hloc) hz (.z hloc) 
 	        gw (int (- w RIGHT_AREA_WIDTH))
-	        gh (int (- h MESSAGE_WINDOW_HEIGHT))
+	        gh (int (- h STATUS_BAR_HEIGHT))
           ox (long (- hx (quot gw 2))) 
           oy (long (- hy (quot gh 2))) 
           oz (long hz)]
@@ -122,16 +122,27 @@
       (gui/draw jc 1 (+ sy i) (msgs i)))
     (if more-msgs? (gui/draw jc 1 (+ sy (dec mh)) "[press m to see more messages]"))))
 
+(def STAT_BACKGROUND_COLOUR (colour 0x301020))
+
 (defn redraw-stats [state]
   (let [^JConsole jc (:console state)
 	      game @(:game state) 
         hero (engine/hero game) 
 	      w (.getColumns jc)
 	      h (.getRows jc)
-	      gw RIGHT_AREA_WIDTH
-	      gh (- h MESSAGE_WINDOW_HEIGHT)
+	      sy (- h STATUS_BAR_HEIGHT) 
           ]
-    (.fillArea jc \space (colour 0xC0C0C0) (colour 0x301020) (int (- w gw)) (int 0) (int gw) (int gh))))
+    (.fillArea jc \space (colour 0xC0C0C0) STAT_BACKGROUND_COLOUR (int 0) sy (int w) (int STATUS_BAR_HEIGHT))
+    (let [hps (:hps hero)
+          hpsmax (:hps-max hero)
+          p (max 0.0 (min 1.0 (/ (double hps) hpsmax)))]
+      (.setBackground jc ^Color STAT_BACKGROUND_COLOUR)
+      (.setForeground jc ^Color (colour 0xC0C0C0))
+      (gui/draw jc 1 (+ sy 0) (str "HPs: "))
+      (.setForeground jc ^Color (Color. (float (min 1.0 (- 2 (* 2 p))))
+                                        (float (min 1.0 (* 2 p)))
+                                        (float 0)))
+	    (gui/draw jc 6 (+ sy 0) (str hps "/" hpsmax)))))
 
 (defn redraw-screen 
   "Redraw the main playing screen"
@@ -276,6 +287,10 @@
           (.contains "12346789" k)
             (do
               (swap! (:game state) world/handle-move (or (move-dir-map k) (error "direction no recognised [" k "]")))
+              (redraw-screen state))
+          (.contains ".5" k) 
+            (do
+              (swap! (:game state) world/handle-wait 100)
               (redraw-screen state))
           (= "i" k) (show-inventory state)
           (= "d" k) (choose-drop state)

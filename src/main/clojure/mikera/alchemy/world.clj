@@ -108,6 +108,16 @@
       (engine/try-pickup game h item)
       (end-turn game))))
 
+(defn handle-wait 
+  "Handles waiting"
+  [game time]
+  (let [h (engine/hero game)]
+    (as-> game game
+      (engine/clear-messages game)
+      (engine/message game h "You wait....")
+      (!+ game h :aps (- time))
+      (end-turn game))))
+
 (defn handle-command
   "Handles a command, expressed as a complete command String"
   [game k]

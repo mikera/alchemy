@@ -374,11 +374,16 @@
     (define-creatures)
     (define-hero)))
 
+(defn post-process-properties [v]
+  (as-> v v
+    (if (.startsWith (:name v) "base ") (assoc v :freq 0.0) v)
+    (if (and (:hps v) (not (:hps-max v))) (assoc v :hps-max (:hps v)) v)))
+
 (defn post-process 
   ([objects]
     (into {}
           (map (fn [[k v]]
-                 [k (if (.startsWith (:name v) "base ") (assoc v :freq 0.0) v)])
+                 [k (post-process-properties v)])
                objects))))
 
 (defn build-lib []
