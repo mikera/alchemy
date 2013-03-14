@@ -27,6 +27,7 @@
     (add-thing game (loc 0 0 0) (lib/create game "you")) 
     (merge game {:turn 0
                  :hero-id (:last-added-id game)})
+    (engine/message game (engine/hero game) "Welcome to the dungeon, Alchemist! Seek the Philosopher's Stone!")
     (engine/update-visibility game)))
 
 (defn monster-turn [game aps-added]
