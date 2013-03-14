@@ -159,7 +159,8 @@
                :char (char \%)
                :z-order 20})
     (proclaim "base ingredient" "base item" 
-              {:is-item true
+              {:is-ingredient true
+               :is-item true
                :char (char 0x2663)
                :colour-fg (colour 0x008000) 
                :z-order 20})
@@ -187,6 +188,14 @@
 
 (defn define-food [lib]
   (-> lib
+    (proclaim "base mushroom" "base ingredient" 
+              {:char (char 0x2660)
+               :food-value 10})
+    (proclaim "magic mushroom" "base mushroom" 
+              {:char (char 0x2660)
+               :food-value 10
+               :modifiers {:colour-fg 
+                             [(modifier :colour-fg (colour (Rand/r 0x1000000)))]}})
     (proclaim "slime mould" "base food" 
               {:food-value 100})))
 

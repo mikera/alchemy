@@ -17,7 +17,7 @@
     (mm/place-thing game (loc -3 -3 0) (loc 11 3 0) (lib/create game "potion of healing"))
     (mm/place-thing game (loc -3 -3 0) (loc 11 3 0) (lib/create game "potion of healing"))
     (mm/place-thing game (loc -3 -3 0) (loc 11 3 0) (lib/create game "potion of healing"))
-    (mm/place-thing game (loc -3 -3 0) (loc 11 3 0) (lib/create game "slime mould"))
+    (mm/place-thing game (loc -3 -3 0) (loc 11 3 0) (lib/create game "magic mushroom"))
     (mm/place-thing game (loc -3 -3 0) (loc 11 3 0) (lib/create game "slime mould"))
     (mm/place-thing game (loc -3 -3 0) (loc 11 3 0) (lib/create game "slime mould"))
     (mm/place-thing game (loc 4 0 0) (loc 4 0 0) (lib/create game "door"))))

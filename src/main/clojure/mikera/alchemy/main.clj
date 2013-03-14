@@ -88,13 +88,13 @@
                     (displayable-thing game tx ty oz)
                     world/BLANK_TILE)
                 t (or t world/BLANK_TILE)
-                ^Color fg (or (:colour-fg t) (error "No foreground colour! on " (:name t)))
-                ^Color bg (or (:colour-bg t) (error "No foreground colour! on " (:name t)))
+                ^Color fg (or (? t :colour-fg) (error "No foreground colour! on " (:name t)))
+                ^Color bg (or (? t :colour-bg) (error "No foreground colour! on " (:name t)))
                 ^Color fg (if visible? (shade-colour fg d2) fg)
                 ^Color bg (if visible? (shade-colour bg d2) bg)]
 	          (.setForeground jc fg)
 	          (.setBackground jc bg)
-	          (gui/draw jc x y (char (:char t))))))
+	          (gui/draw jc x y (char (? t :char))))))
 	    (.repaint jc))))
 
 (defn redraw-messages [state]
