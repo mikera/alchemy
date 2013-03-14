@@ -79,6 +79,17 @@
     (.get viz (.x loc) (.y loc) (.z loc))))
 
 ;; ======================================================
+;; identification
+
+(defn identify [game thing]
+  (let [name (:name thing)]
+    (update-in game [:lib :objects :name :is-identified] (fn [old] true))))
+
+(defn is-identified? [game thing]
+  (or (:is-identified thing)
+      (:is-identified ((:objects (:lib game)) (:name thing)))))
+
+;; ======================================================
 ;; actions
 
 (defn wait [game actor]

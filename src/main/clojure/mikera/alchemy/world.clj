@@ -26,6 +26,8 @@
     (lib/setup game)
     (dungeon/generate game)
     
+    (assoc game :functions {:is-identified? engine/is-identified?})
+    
     ;; add the hero
     (add-thing game (loc 0 0 0) (lib/create game "you")) 
     (merge game {:turn 0

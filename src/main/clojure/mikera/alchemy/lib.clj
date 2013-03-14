@@ -4,6 +4,7 @@
   (:use mikera.orculje.util)
   (:use mikera.orculje.text)
   (:require [mikera.alchemy.engine :as engine])
+  (:require [clojure.math.combinatorics :as combo])
   (:import [mikera.util Rand]))
 
 
@@ -213,11 +214,47 @@
                :colour-fg (colour 0xC00000) 
                :z-order 20})))
 
+(def POTION-COLOURS {"blue" {:colour-fg (colour 0x0000FF)}
+                     "red" {:colour-fg (colour 0xFF0000)}
+                     "green" {:colour-fg (colour 0x00FF00)}
+                     "orange" {:colour-fg (colour 0xFF8000)}
+                     "pink" {:colour-fg (colour 0xFFA0A0)}
+                     "aquamarine" {:colour-fg (colour 0x00FFFF)}
+                     "white" {:colour-fg (colour 0xFFFFFF)}
+                     "black" {:colour-fg (colour 0x404040)}
+                     "grey" {:colour-fg (colour 0x909090)}
+                     "purple" {:colour-fg (colour 0xFF00A0)}
+                     "indigo" {:colour-fg (colour 0xA000FF)}
+                     "lime green" {:colour-fg (colour 0x70FF90)}
+                     "brown" {:colour-fg (colour 0x806030)}
+                     "yellow" {:colour-fg (colour 0xFFFF00)}})
+
+(def POTION-ADJECTIVES ["bubbling" "fizzy" "milky" "oily" "shining" "glowing"
+                         "pulsating" "turbulent" "frothy" "metallic" "transparent"
+                         "viscous" "glittering" "smelly" "noxious" "fragrant"])
+
+(defn describe-potions [lib]
+  (let [all-potions (filter #(and (:is-potion %) (> (:freq %) 0)) (vals (:objects lib)))
+        combos (shuffle (combo/cartesian-product POTION-ADJECTIVES (keys POTION-COLOURS)))
+        potions (map 
+                  (fn [p [a c]]
+                    (-> p
+                      (merge (POTION-COLOURS c))
+                      (assoc :unidentified-name (str a " " c " potion"))))
+                  all-potions
+                  combos)
+        updated-potion-map (zipmap (map :name potions) potions)]
+    (assoc lib :objects (merge (:objects lib) updated-potion-map))))
+
 (defn define-potions [lib]
   (-> lib
-    
-    (proclaim "potion of healing" "base potion" 
-              {:colour-fg (colour 0x0090B0)})))
+    (proclaim "strengthening potion" "base potion" 
+              {:colour-fg (colour 0x0090B0)})
+    (proclaim "power potion" "base potion" 
+              {:colour-fg (colour 0x0090B0)})
+    (proclaim "healing potion" "base potion" 
+              {:colour-fg (colour 0x0090B0)})
+    (describe-potions)))
 
 (defn define-ingredients [lib]
   (-> lib
