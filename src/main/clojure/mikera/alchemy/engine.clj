@@ -4,6 +4,7 @@
   (:use mikera.cljutils.error)
   (:require [mikera.orculje.engine :as en])
   (:import [mikera.engine BitGrid])
+  (:import [mikera.util Rand])
   (:require[ mikera.orculje.text :as text]))
 
 (set! *warn-on-reflection* true)
@@ -51,8 +52,8 @@
 (defn base-name [game thing]
   (text/base-name game thing))
 
-(defn test 
-  "Random skill test"
+(defn check 
+  "Random skill check"
   ([a b]
     (> a (* (Rand/nextDouble) (+ a b)))))
 
@@ -150,7 +151,6 @@
     :else
       (try-use game thing target)))
 
-
 (defn try-move
   [game thing loc]
   (if-let [target (get-blocking game loc)]
@@ -163,7 +163,8 @@
 ;; "AI"
 
 (defn monster-action 
-  "Performs one action for a monster. Assume this function only called if monster has sufficient aps." 
+  "Performs one action for a monster. Assume this function only called if monster has 
+   sufficient aps to make a move." 
   ([game m]
     ;; (println (str "monster thinking: " (:name m)))
     (let [m (get-thing game m)

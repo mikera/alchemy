@@ -49,33 +49,35 @@
   (loop [game game
          obs (seq (all-things game))]
     (if obs
-      (let [o (get-thing game (first obs))]
+      (if-let [o (get-thing game (first obs))]
         (if-let [mfn (:on-action o)]
           (recur
-            (let [new-aps (+ (or (:aps o) 0) aps-added)
-	                game (if (== aps-added 0) game (! game o :aps new-aps))
-                  o (get-thing game o)]
+            (let [game (if (== aps-added 0) game (!+ game o :aps aps-added))]
 	            ;; (println (str new-aps " aps action on " (into {} o)))
+	            (loop [game game max-moves 10]
+                (if-let [o (get-thing game o)]
+                  (if (and (> max-moves 0) (>= (:aps o) 0))
+                    (recur (mfn game o) (dec max-moves))
+                    (if (> (:aps o) 0) ;; check to remove any remaining aps
+                      (! game o :aps 0) 
+                      game)))))
 	            
-	            (if (> new-aps 0)
-	                (mfn game o)
-	                game))
             (next obs))
-          (recur game (next obs))))
+          (recur game (next obs)))
+        (recur game (next obs)))
       game)))
 
 (defn end-turn 
   "Called to update the game after every player turn"
   ([game]
-    (let [hero (engine/hero game)]
+    (let [hero (engine/hero game)
+          aps-debt (- (:aps hero))
+          turn (:turn game)]
+      ;; (println (str "turn " turn " ending with aps used: " aps-debt))
       (as-> game game
-            (monster-turn game (- (:aps hero)))
-            (monster-turn game 0)
-            (monster-turn game 0)
+            (monster-turn game aps-debt)
             (engine/update-visibility game)
-            (let [turn (:turn game)]
-              ;; (println (str "Finished turn: " turn))
-              (assoc game :turn (inc turn)))
+            (assoc game :turn (inc turn))
             (! game hero :aps 0)
             ;;(do (println "Turn ended") game)
             ))))
@@ -98,6 +100,25 @@
       (engine/clear-messages game)
       (engine/try-drop game h item)
       (end-turn game))))
+
+(defn handle-open 
+  "Handles opening a door / lever"
+  [game dir]
+  (let [game (engine/clear-messages game)
+        h (engine/hero game)
+        tloc (loc-add (:location h) dir)
+        target (find/find-first :on-open (get-things game tloc))
+        blocker (get-blocking game tloc)
+        ]
+    (cond 
+      (nil? target)
+        (engine/message game h "There is nothing here to open.")
+      (and blocker (not= blocker target))
+        (engine/message game h (str "Can't open or close " (engine/the-name game target) ": area blocked"))
+      :else
+        (as-> game game
+            (engine/try-open game h target)
+            (end-turn game)))))
 
 (defn handle-pickup 
   "Handles item pickup"

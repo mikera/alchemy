@@ -21,6 +21,8 @@
 (def STATUS_BAR_HEIGHT 2) 
 (def MAX_DISPLAYED_MESSAGES 5)
 
+(def TEXT_COLOUR (colour 0xC0C0C0))
+
 (declare main-handler) 
 
 (defn new-frame 
@@ -115,8 +117,8 @@
         mh MAX_DISPLAYED_MESSAGES
         sy 0
         more-msgs? (> cm mh)]
-    (.fillArea jc \space (colour 0xC0C0C0) (colour 0x000000) (int 0) (int sy) (int w) (min cm mh))
-	  (.setForeground jc ^Color (colour 0xC0C0C0))
+    (.fillArea jc \space TEXT_COLOUR (colour 0x000000) (int 0) (int sy) (int w) (min cm mh))
+	  (.setForeground jc ^Color TEXT_COLOUR)
 	  (.setBackground jc ^Color (colour 0x000000))
     (dotimes [i (if more-msgs? (dec mh) cm)]
       (gui/draw jc 1 (+ sy i) (msgs i)))
@@ -133,18 +135,18 @@
 	      h (.getRows jc)
 	      sy (- h STATUS_BAR_HEIGHT) 
           ]
-    (.fillArea jc \space (colour 0xC0C0C0) STAT_BACKGROUND_COLOUR (int 0) sy (int w) (int STATUS_BAR_HEIGHT))
+    (.fillArea jc \space TEXT_COLOUR STAT_BACKGROUND_COLOUR (int 0) sy (int w) (int STATUS_BAR_HEIGHT))
     (let [hps (:hps hero)
           hpsmax (:hps-max hero)
           p (max 0.0 (min 1.0 (/ (double hps) hpsmax)))]
       (.setBackground jc ^Color STAT_BACKGROUND_COLOUR)
-      (.setForeground jc ^Color (colour 0xC0C0C0))
+      (.setForeground jc ^Color TEXT_COLOUR)
       (gui/draw jc 1 (+ sy 0) (str "HPs: "))
       (.setForeground jc ^Color (Color. (float (min 1.0 (- 2 (* 2 p))))
                                         (float (min 1.0 (* 2 p)))
                                         (float 0)))
 	    (gui/draw jc 6 (+ sy 0) (str hps "/" hpsmax))
-      (.setForeground jc ^Color (colour 0xC0C0C0))
+      (.setForeground jc ^Color TEXT_COLOUR)
       (gui/draw jc 16 (+ sy 0) (str (str "SK:" (? game hero :SK) STAT_SPACE)
                                     (str "ST:" (? game hero :ST) STAT_SPACE)
                                     (str "AG:" (? game hero :IN) STAT_SPACE)
@@ -153,7 +155,7 @@
                                     (str "WP:" (? game hero :WP) STAT_SPACE)
                                     (str "CH:" (? game hero :CH) STAT_SPACE)
                                     (str "CR:" (? game hero :CR) STAT_SPACE)))
-      (.setForeground jc ^Color (colour 0xC0C0C0))
+      (.setForeground jc ^Color TEXT_COLOUR)
       (let [effs (filter :is-effect (contents hero))]
         (gui/draw jc 1 (+ sy 1) (apply str (distinct (map #(str (:name %) " ") effs))))))))
 
@@ -181,14 +183,15 @@
    ["e" "Eat a food item"]
    ["i" "Inventory (select an item to examine it)"]
    ["m" "Show recent messages"]
+   ["o" "Open / close a door, box or mechanism"]
    ["q" "Quaff potion"]])
 
 (defn show-commands [state]
   (let [^JConsole jc (:console state)
 	      w (.getColumns jc)
 	      h (.getRows jc)]
-    (.fillArea jc \space (colour 0xC0C0C0) (colour 0x002010) 0 0 w h)
-    (.setForeground jc ^Color (colour 0xC0C0C0))
+    (.fillArea jc \space TEXT_COLOUR (colour 0x002010) 0 0 w h)
+    (.setForeground jc ^Color TEXT_COLOUR)
     (.setBackground jc ^Color (colour 0x002010))   
     (gui/draw jc 1 0 "Alchemy help: commands")
     (dotimes [i (count COMMANDS)]
@@ -213,8 +216,8 @@
                                  (fn [[& ms] i] (map vector ms (repeat i))) 
                                  msg-log
                                  (range))))]
-    (.fillArea jc \space (colour 0xC0C0C0) (colour 0x010020) 0 0 w h)
-    (.setForeground jc ^Color (colour 0xC0C0C0))
+    (.fillArea jc \space TEXT_COLOUR (colour 0x010020) 0 0 w h)
+    (.setForeground jc ^Color TEXT_COLOUR)
     (.setBackground jc ^Color (colour 0x010020))   
     (gui/draw jc 1 0 "Recent message log:")
     (dotimes [i (min (- SCREEN_HEIGHT 3) (count msg-list))]
@@ -236,16 +239,16 @@
 	      w (.getColumns jc)
 	      h (.getRows jc)
         c (count items)]
-    (.fillArea jc \space (colour 0xC0C0C0) (colour 0x201000) 0 0 w h)
-    (.setForeground jc ^Color (colour 0xC0C0C0))
+    (.fillArea jc \space TEXT_COLOUR (colour 0x201000) 0 0 w h)
+    (.setForeground jc ^Color TEXT_COLOUR)
     (.setBackground jc ^Color (colour 0x201000))
     (gui/draw jc 1 0 msg)
     (loop/for-loop [i 0 (and (< (+ pos i) c) (< i 26)) (inc i)]
-      (.setForeground jc ^Color (colour 0xC0C0C0))
+      (.setForeground jc ^Color TEXT_COLOUR)
       (gui/draw jc 3 (+ 2 i) (str "[ # ] = " (items (+ pos i))))
       (.setForeground jc ^Color (colour 0xFFFF80))
       (gui/draw jc 5 (+ 2 i) (char (+ (int \a) i))))
-    (.setForeground jc ^Color (colour 0xC0C0C0))
+    (.setForeground jc ^Color TEXT_COLOUR)
     (gui/draw jc 0 29 (str " Page " (inc (quot pos 26)) " of " (inc (quot (dec c) 26)) "   "
                            (if (> pos 0) "[UP to go back]  " "")
                            (if (< (+ pos 25) c) "[DOWN for more]  " "")))
@@ -270,6 +273,56 @@
 	                :else 
 	                  :ignored))))))
 
+;; =====================================================
+;; direction selection
+
+(def move-dir-map
+  {"1" (loc -1 -1 0)
+   "2" (loc 0 -1 0)
+   "3" (loc 1 -1 0)
+   "4" (loc -1 0 0)
+   "5" (loc 0 0 0)
+   "6" (loc 1 0 0)
+   "7" (loc -1 1 0)
+   "8" (loc 0 1 0)
+   "9" (loc 1 1 0)})
+
+(defn direction-select-handler [state msg action]
+  (let [^JConsole jc (:console state)
+        w (.getColumns jc)
+	      h (.getRows jc)
+       ]
+    (redraw-world state)
+    (redraw-stats state)
+    (.fillArea jc \space TEXT_COLOUR (colour 0x200020) 0 0 w 1)
+    (.setForeground jc ^Color TEXT_COLOUR)
+    (.setBackground jc ^Color (colour 0x200020))
+    (gui/draw jc 1 0 msg)
+    (reset! (:event-handler state)
+	          (fn [^String k]
+	            (let [sel (.indexOf "123456789" k)]
+	              (cond 
+	                (>= sel 0)
+	                  (action (move-dir-map k))
+	                (= "Q" k)
+	                  (main-handler state)
+	                :else 
+	                  :ignored))))
+))
+
+;; ================================================================
+;; manipulation actions
+
+(defn choose-open [state]
+  (let [game @(:game state)
+        hero (engine/hero game)]
+    (direction-select-handler state "Open: select direction" 
+                              (fn [dir] 
+                                (swap! (:game state) world/handle-open dir)
+                                (main-handler state)))))
+
+;; ================================================================
+;; inventory actions
 
 (defn choose-drop [state]
   (let [game @(:game state)
@@ -306,15 +359,6 @@
 ;;
 ;; each handler sets up :event-handler to deal with next keypress
 
-(def move-dir-map
-  {"1" (loc -1 -1 0)
-   "2" (loc 0 -1 0)
-   "3" (loc 1 -1 0)
-   "4" (loc -1 0 0)
-   "6" (loc 1 0 0)
-   "7" (loc -1 1 0)
-   "8" (loc 0 1 0)
-   "9" (loc 1 1 0)})
 
 (defn map-synonyms [k]
   ({"5" "."} k k))
@@ -336,6 +380,7 @@
               (redraw-screen state))
           (= "i" k) (show-inventory state)
           (= "d" k) (choose-drop state)
+          (= "o" k) (choose-open state)
           (= "m" k) (show-messages state)
           (.contains ",p" k) (choose-pickup state)
           (= "?" k) (show-commands state)
