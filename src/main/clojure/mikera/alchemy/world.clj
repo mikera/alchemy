@@ -104,6 +104,15 @@
       (engine/try-drop game h item)
       (end-turn game))))
 
+(defn handle-consume 
+  "Handles consuming an item (eating or quaffing)"
+  [game item]
+  (let [h (engine/hero game)]
+    (as-> game game
+      (engine/clear-messages game)
+      (engine/try-consume game h item)
+      (end-turn game))))
+
 (defn handle-open 
   "Handles opening a door / lever"
   [game dir]

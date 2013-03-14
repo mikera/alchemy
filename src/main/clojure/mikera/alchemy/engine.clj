@@ -130,7 +130,7 @@
 
 (defn identify [game thing]
   (let [name (:name thing)]
-    (update-in game [:lib :objects :name :is-identified] (fn [old] true))))
+    (update-in game [:lib :objects name :is-identified] (fn [old] true))))
 
 (defn is-identified? [game thing]
   (or (:is-identified thing)
@@ -147,6 +147,13 @@
     (if (? door :is-locked)
       (message game actor (str (text/verb-phrase :the door) " is locked."))
       ((:on-open door) game door actor))    
+    (!+ game actor :aps -100)))
+
+(defn try-consume [game actor item]
+  (as-> game game
+    (if-let [con-fn (:on-consume item)]
+      (con-fn game item actor)
+      (message game actor (str "You don't know how to consume " (the-name game item))))    
     (!+ game actor :aps -100)))
 
 (defn try-use [game actor thing]

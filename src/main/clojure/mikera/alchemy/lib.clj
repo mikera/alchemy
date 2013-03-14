@@ -11,7 +11,9 @@
 ;; ===================================================
 ;; library constants
 
-(def BLANK_TILE_PROPS {:is-tile true
+(def BLANK_TILE_PROPS {:name "nothing"
+                       :is-proper-name true
+                       :is-tile true
                        :char \space
                        :colour-fg (colour 0x000000)
                        :colour-bg (colour 0x000000)
@@ -210,6 +212,16 @@
 ;; ===================================================
 ;; library definitions - items
 
+
+(defmacro consume-function [[game item actor :as binds] & body]
+  (when-not (and (vector? binds) (every? symbol? binds)) (error "consume function requires [game actor item] bindings")) 
+  `(fn [~game ~item ~actor ]
+     (as-> ~game ~game
+       (engine/identify ~game ~item)
+       (remove-thing ~game ~item)
+       ~@body
+       )))
+
 (defn define-base-item [lib]
   (-> lib
     (proclaim "base item" "base thing" 
@@ -225,14 +237,24 @@
     (proclaim "base potion" "base item" 
               {:is-potion true
                :char (char \!)
+               :on-consume  (consume-function [game item actor]
+                              (engine/message game actor "Yuck. This potions tastes terrible.")
+                              (do (println (str "Potion has no consume defined: " (:name item))) game))
+               :on-splash (consume-function [game item target]
+                            (engine/message game target (str "You are splashed with " (the-name game item) "!"))
+                            ((:on-consume item) game item target))
                :colour-fg (colour 0x0090B0) 
                :z-order 25})
     (proclaim "base food" "base ingredient" 
               {:is-food true
                :char (char 0x2663)
                :food-value 100
+               :on-consume  (consume-function [game item actor]
+                              (!+ actor :food (:food-value item))
+                              (engine/message game actor (str "Mmmm. " (engine/a-name game item) " .Tasty.")))
                :colour-fg (colour 0xC00000) 
                :z-order 20})))
+
 
 (def POTION-COLOURS {"blue" {:colour-fg (colour 0x0000FF)}
                      "red" {:colour-fg (colour 0xFF0000)}
@@ -269,11 +291,22 @@
 (defn define-potions [lib]
   (-> lib
     (proclaim "strengthening potion" "base potion" 
-              {:colour-fg (colour 0x0090B0)})
-    (proclaim "power potion" "base potion" 
-              {:colour-fg (colour 0x0090B0)})
+              {:on-consume  (consume-function [game item actor]
+                              (!+ actor :ST 1)
+                              (engine/message game actor "You feel stronger!"))})
+    (proclaim "willpower potion" "base potion" 
+              {:on-consume  (consume-function [game item actor]
+                              (!+ actor :WP 1)
+                              (engine/message game actor "You feel more strong willed!"))})
+    (proclaim "health boost potion" "base potion" 
+              {:on-consume (consume-function [game item actor]
+                             (let [hps (:hps actor)
+                                   new-hps (+ hps (Rand/r (:TG actor)))]
+                               (! actor :hps new-hps)
+                               (engine/message game actor
+                                 (if (> new-hps hps) "You feel healthier." "You feel very healthy."))))})
     (proclaim "healing potion" "base potion" 
-              {:colour-fg (colour 0x0090B0)})
+              {})
     (describe-potions)))
 
 (defn define-ingredients [lib]

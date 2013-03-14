@@ -191,6 +191,7 @@
   [["d" "Drop an item"]
    ["e" "Eat a food item"]
    ["i" "Inventory (select an item to examine it)"]
+   ["l" "Look around (movement keys to move cursor)"]
    ["m" "Show recent messages"]
    ["o" "Open / close a door, box or mechanism"]
    ["q" "Quaff potion"]])
@@ -294,7 +295,9 @@
    "6" (loc 1 0 0)
    "7" (loc -1 1 0)
    "8" (loc 0 1 0)
-   "9" (loc 1 1 0)})
+   "9" (loc 1 1 0)
+   "<" (loc 0 0 -1)
+   ">" (loc 0 0 1)})
 
 (defn direction-select-handler [state msg action]
   (let [^JConsole jc (:console state)
@@ -322,28 +325,53 @@
 ;; ================================================================
 ;; map selection
 
-(defn map-select-handler [state msg action loc]
+(defn draw-crosshairs [^JConsole jc cx cy]
+  (let [^Color fg (.getForegroundAt jc cx cy)
+        ^Color bg (.getBackgroundAt jc cx cy)
+        ch (char (.getCharAt jc cx cy))]
+    (.setCursorPos jc cx cy)
+    (.setForeground jc ^Color bg)
+    (.setBackground jc ^Color fg)
+    (.write jc ch)
+;    (.setForeground jc (colour 0xFFA080))
+;    (.setBackground jc (colour 0x000000))
+;    (gui/draw jc (dec cx) (dec cy) "\\")
+;    (gui/draw jc (dec cx) (inc cy) "/")
+;    (gui/draw jc (inc cx) (dec cy) "/")
+;    (gui/draw jc (inc cx) (inc cy) "\\")
+    ))
+
+(defn map-select-handler [state msg loc action]
   (let [^JConsole jc (:console state)
+        game @(:game state)
         w (.getColumns jc)
 	      h (.getRows jc)
+        [x y z] loc 
+       	gw (int (- w RIGHT_AREA_WIDTH))
+	      gh (int (- h STATUS_BAR_HEIGHT))
+        cx (int (quot gw 2)) 
+        cy (int (quot gh 2)) 
        ]
-    (redraw-world state)
+    (redraw-world state loc)
     (redraw-stats state)
-    (.fillArea jc \space TEXT_COLOUR (colour 0x200020) 0 0 w 1)
+    (.fillArea jc \space TEXT_COLOUR (colour 0x200000) 0 0 w 2)
     (.setForeground jc ^Color TEXT_COLOUR)
-    (.setBackground jc ^Color (colour 0x200020))
+    (.setBackground jc ^Color (colour 0x200000))
     (gui/draw jc 1 0 msg)
+    (gui/draw jc 3 1 (mikera.orculje.text/capitalise (engine/a-name game (displayable-thing game x y z)))) 
+    (draw-crosshairs jc cx cy)
     (reset! (:event-handler state)
 	          (fn [^String k]
-	            (let [sel (.indexOf "123456789" k)]
+               (let [sel (.indexOf "123456789<>" k)]
 	              (cond 
 	                (>= sel 0)
-	                  (action (move-dir-map k))
-	                (= "Q" k)
-	                  (main-handler state)
-	                :else 
-	                  :ignored))))
-))
+	                  (map-select-handler state msg (loc-add loc (move-dir-map k)) action )
+	                (= " " k)
+                    (action loc)
+                  (= "Q" k)
+                    (main-handler state)
+                  :else 
+                    :ignored))))))
 
 ;; ================================================================
 ;; manipulation actions
@@ -370,6 +398,29 @@
                         (swap! (:game state) world/handle-drop (inv n))
                         (main-handler state))))) 
 
+(defn choose-eat [state]
+  (let [game @(:game state)
+        hero (engine/hero game)
+        inv (vec (filter :is-food (contents hero)))]
+    (item-select-handler state "Eat an item:" 
+                      (vec (map (partial engine/base-name game) inv))
+                      0
+                      (fn [n] 
+                        (swap! (:game state) world/handle-consume (inv n))
+                        (main-handler state))))) 
+
+
+(defn choose-quaff [state]
+  (let [game @(:game state)
+        hero (engine/hero game)
+        inv (vec (filter :is-potion (contents hero)))]
+    (item-select-handler state "Quaff a potion:" 
+                      (vec (map (partial engine/base-name game) inv))
+                      0
+                      (fn [n] 
+                        (swap! (:game state) world/handle-consume (inv n))
+                        (main-handler state))))) 
+
 (defn show-inventory [state]
   (let [game @(:game state)
         hero (engine/hero game)
@@ -388,6 +439,14 @@
                       (fn [n] 
                         (swap! (:game state) world/handle-pickup (inv n))
                         (main-handler state))))) 
+
+ (defn do-look [state]
+   (let [game @(:game state)]
+     (map-select-handler state 
+                       "Look around:" 
+                       (engine/hero-location game) 
+                       (fn [n] 
+                         (main-handler state))))) 
 
 ;; ========================================================
 ;; Input state handler functions
@@ -415,8 +474,11 @@
               (redraw-screen state))
           (= "i" k) (show-inventory state)
           (= "d" k) (choose-drop state)
-          (= "o" k) (choose-open state)
+          (= "e" k) (choose-eat state)
+          (= "l" k) (do-look state)
+          (= "q" k) (choose-quaff state)
           (= "m" k) (show-messages state)
+          (= "o" k) (choose-open state)
           (.contains ",p" k) (choose-pickup state)
           (= "?" k) (show-commands state)
           :else
