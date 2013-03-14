@@ -66,16 +66,19 @@
 ;; directions
 
 (def DIRECTIONS
-  [(loc -1 -1 0)
-   (loc 0 -1 0)
-   (loc 1 -1 0)
-   (loc 1 0 0)
-   (loc 1 1 0)
-   (loc 0 1 0)
-   (loc -1 1 0)
-   (loc -1 0 0)
-   (loc 0 0 1)
-   (loc 0 0 -1)])
+  {0 (loc -1 -1 0)
+   1 (loc 0 -1 0)
+   2 (loc 1 -1 0)
+   3 (loc 1 0 0)
+   4 (loc 1 1 0)
+   5 (loc 0 1 0)
+   6 (loc -1 1 0)
+   7 (loc -1 0 0)
+   8 (loc 0 0 1)
+   9 (loc 0 0 -1)})
+
+(def REVERSE-DIRECTIONS
+  (into {} (map (fn [[k v]] [v k]) DIRECTIONS)))
 
 ;; =======================================================
 ;; vision
@@ -180,6 +183,15 @@
     :else
       (try-use game thing target)))
 
+
+(defn can-move 
+  "Returns true if a move or attack to a target location is possible."
+  ([game m tloc]
+  (let [bl (get-blocking game tloc)]
+    (if (or (not bl) (is-hostile m bl))
+      true
+      nil))))
+
 (defn try-move
   [game thing loc]
   (if-let [target (get-blocking game loc)]
@@ -196,18 +208,36 @@
 ;; ===================================================
 ;; "AI"
 
+(defn consider-move-dir 
+  "Considers whether a move is sensible. Tries it if sensible, returns nil otherwise"
+  ([game m dir]
+    (let [loc (location game m)
+          tloc (loc-add loc dir)]
+      ;;(println (str (:name m) " considering direction " dir))
+      (if (can-move game m tloc)
+        (try-move game m tloc)
+        nil))))
+
 (defn monster-action 
   "Performs one action for a monster. Assume this function only called if monster has 
    sufficient aps to make a move." 
   ([game m]
-    ;; (println (str "monster thinking: " (:name m)))
+    ;;(println (str "monster thinking: " (:name m)))
     (let [m (get-thing game m)
           loc (location game m)]
       (if (is-square-visible? game loc)
         (let [hloc (hero-location game)
               dir (direction loc hloc)
-              tloc (loc-add loc dir)]
-          (try-move game m tloc))
-        (if (Rand/chance 0.3)
+              di (or (REVERSE-DIRECTIONS dir) 
+                     (do 
+                       ;;(println "picking random direction") 
+                       (Rand/r 8)))]
+          (or 
+            (consider-move-dir game m dir)
+            (consider-move-dir game m (DIRECTIONS (mod (inc di) 8)))
+            (consider-move-dir game m (DIRECTIONS (mod (dec di) 8)))
+            (consider-move-dir game m (DIRECTIONS (Rand/r 8)))
+            (wait game m)))
+        (if (Rand/chance 0.2)
           (try-move game m (loc-add loc (DIRECTIONS (Rand/r 8))))
           game)))))
