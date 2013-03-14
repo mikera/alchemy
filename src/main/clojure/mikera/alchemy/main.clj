@@ -25,7 +25,7 @@
 
 (defn new-frame 
   (^JFrame []
-    (let [frame (JFrame.)]
+    (let [frame (JFrame. "Alchemy I : Quest for the Philosopher's Stone")]
       frame)))
 
 (defn new-console
@@ -123,6 +123,7 @@
     (if more-msgs? (gui/draw jc 1 (+ sy (dec mh)) "[press m to see more messages]"))))
 
 (def STAT_BACKGROUND_COLOUR (colour 0x301020))
+(def STAT_SPACE "  ")
 
 (defn redraw-stats [state]
   (let [^JConsole jc (:console state)
@@ -142,7 +143,16 @@
       (.setForeground jc ^Color (Color. (float (min 1.0 (- 2 (* 2 p))))
                                         (float (min 1.0 (* 2 p)))
                                         (float 0)))
-	    (gui/draw jc 6 (+ sy 0) (str hps "/" hpsmax)))))
+	    (gui/draw jc 6 (+ sy 0) (str hps "/" hpsmax))
+      (.setForeground jc ^Color (colour 0xC0C0C0))
+      (gui/draw jc 16 (+ sy 0) (str (str "SK:" (? game hero :SK) STAT_SPACE)
+                                    (str "ST:" (? game hero :ST) STAT_SPACE)
+                                    (str "AG:" (? game hero :IN) STAT_SPACE)
+                                    (str "TG:" (? game hero :WP) STAT_SPACE)
+                                    (str "IN:" (? game hero :IN) STAT_SPACE)
+                                    (str "WP:" (? game hero :WP) STAT_SPACE)
+                                    (str "CH:" (? game hero :CH) STAT_SPACE)
+                                    (str "CR:" (? game hero :CR) STAT_SPACE))))))
 
 (defn redraw-screen 
   "Redraw the main playing screen"
