@@ -79,15 +79,17 @@
 (defn redraw-world 
   "Redraws the game world playing area"
   ([state]
+    (redraw-world state (:location (engine/hero @(:game state))) ))
+  ([state loc]
 	  (let [^JConsole jc (:console state)
 	        game @(:game state) 
           hero (engine/hero game) 
           ^mikera.engine.BitGrid viz (or (:visibility game) (error "No visibility defined!"))
-          ^mikera.orculje.engine.Location hloc (:location hero) 
+          ^mikera.orculje.engine.Location loc (or loc (:location hero)) 
           ^mikera.engine.PersistentTreeGrid disc (or (:discovered-world game) (error "No discovered world?!?")) 
 	        w (.getColumns jc)
 	        h (.getRows jc)
-          hx (.x hloc) hy (.y hloc) hz (.z hloc) 
+          hx (.x loc) hy (.y loc) hz (.z loc) 
 	        gw (int (- w RIGHT_AREA_WIDTH))
 	        gh (int (- h STATUS_BAR_HEIGHT))
           ox (long (- hx (quot gw 2))) 
@@ -295,6 +297,32 @@
    "9" (loc 1 1 0)})
 
 (defn direction-select-handler [state msg action]
+  (let [^JConsole jc (:console state)
+        w (.getColumns jc)
+	      h (.getRows jc)
+       ]
+    (redraw-world state loc)
+    (redraw-stats state)
+    (.fillArea jc \space TEXT_COLOUR (colour 0x200020) 0 0 w 1)
+    (.setForeground jc ^Color TEXT_COLOUR)
+    (.setBackground jc ^Color (colour 0x200020))
+    (gui/draw jc 1 0 msg)
+    (reset! (:event-handler state)
+	          (fn [^String k]
+	            (let [sel (.indexOf "123456789" k)]
+	              (cond 
+	                (>= sel 0)
+	                  (action (move-dir-map k))
+	                (= "Q" k)
+	                  (main-handler state)
+	                :else 
+	                  :ignored))))
+))
+
+;; ================================================================
+;; map selection
+
+(defn map-select-handler [state msg action loc]
   (let [^JConsole jc (:console state)
         w (.getColumns jc)
 	      h (.getRows jc)

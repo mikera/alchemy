@@ -174,6 +174,8 @@
                                    :is-blocking true
                                    :is-view-blocking false} })))
 
+
+
 (defn define-apparatus [lib]
   (-> lib
     (proclaim "base apparatus" "base scenery" 
@@ -183,10 +185,26 @@
     (proclaim "alchemy bench" "base apparatus" 
               {:char (char 0x046C)})))
 
+(defn define-stairs [lib]
+  (-> lib
+    (proclaim "base stairs" "base scenery" 
+              {:is-stairs true
+               :is-blocking false
+               :is-immortal true
+               :on-use (fn [game app actor]
+                         (engine/message game actor (str "You don't know how to use " (the-name game app) ".")))})
+    (proclaim "up staircase" "base stairs" 
+              {:move-dir (loc 0 0 -1)
+               :char \<})
+    (proclaim "down staircase" "base stairs" 
+              {:move-dir (loc 0 0 1)
+               :char \>})))
+
 (defn define-scenery [lib]
   (-> lib
     (define-base-scenery)
     (define-apparatus)
+    (define-stairs)
     (define-doors)))
 
 ;; ===================================================
