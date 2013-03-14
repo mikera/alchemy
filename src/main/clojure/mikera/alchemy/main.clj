@@ -202,17 +202,6 @@
 ;; =================================================================
 ;; Overall game control / main entry points
 
-(defn launch 
-  "Launch the game with an initial game state. Can be called from REPL."
-  ([state]
-    (let [^JFrame frame (:frame state)
-          ^JConsole jc (:console state)]
-      (setup-input jc state) 
-      (.add (.getContentPane frame) jc)
-      (.pack frame)
-      (.setVisible frame true)
-      (main-handler state) 
-      frame)))
 
 (defn new-state
   "Create a brand new game state."
@@ -225,17 +214,29 @@
                  :event-handler (atom nil)}]
       state)))
 
-;; a state for the world
-(def s (new-state))
+(defn launch 
+  "Launch the game with an initial game state. Can be called from REPL."
+  ([]
+    (def s (new-state))
+    (launch s))
+  ([state]
+    (let [^JFrame frame (:frame state)
+          ^JConsole jc (:console state)]
+      (setup-input jc state) 
+      (.add (.getContentPane frame) jc)
+      (.pack frame)
+      (.setVisible frame true)
+      (main-handler state) 
+      frame)))
 
 (defn relaunch 
   "Relaunches the game with a new initial state. Designed for REPL use" 
   ([]
-    (def s (new-state))
-    (launch s)))
+    (launch)))
 
 (defn main 
   "Main entry point to the demo, called directly from Java main() method in DemoApp"
   ([]
+    (def s (new-state))
     (let [^JFrame frame (launch s)]
       (.setDefaultCloseOperation frame JFrame/EXIT_ON_CLOSE))))

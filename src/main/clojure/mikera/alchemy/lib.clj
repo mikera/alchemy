@@ -85,6 +85,43 @@
                :colour-bg (colour 0x804000)})))
 
 ;; ===================================================
+;; Library definitions - effects
+
+(defn define-base-effects [lib]
+  (-> lib
+    (proclaim "base effect" "base thing" 
+              {:is-effect true
+               :is-invisible true
+               :char (char \#)
+               :z-order -1})
+    (proclaim "base temporary effect" "base thing" 
+              {:on-action (fn [game effect]
+                            (let [elapsed (:aps effect)
+                                  lifetime (- (:lifetime effect) elapsed)]
+                              ;; (println "effect time elapsed = " elapsed " remainging lifetime = " lifetime)
+                              (if (<= lifetime 0)
+                                (remove-thing game effect)
+                                (update-thing game (-> effect
+                                                     (assoc :aps 0)
+                                                     (assoc :lifetime lifetime)))))) 
+               :aps 0     
+               :lifetime 3000})))
+
+(defn define-temp-effects [lib]
+  (-> lib
+    (proclaim "invincibility" "base temporary effect"
+              {:lifetime 2000
+               :parent-modifiers [(modifier :colour-fg (colour (Rand/r 0x1000000)))
+                                  (modifier :ARM (+ value 100))]
+               }
+              )))
+
+(defn define-effects [lib]
+  (-> lib
+    (define-base-effects)
+    (define-temp-effects)))
+
+;; ===================================================
 ;; Library-definitions - scenery
 
 (defn define-base-scenery [lib]
@@ -294,8 +331,9 @@
 (defn define-objects [lib]
   (-> lib
     (define-base)
-    (define-items)
     (define-tiles)
+    (define-effects)
+    (define-items)
     (define-creatures)
     (define-hero)))
 

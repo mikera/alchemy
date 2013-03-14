@@ -22,11 +22,19 @@
 
 (defn new-game []
   (as-> (empty-game) game
+    ;; build game environment
     (lib/setup game)
     (dungeon/generate game)
+    
+    ;; add the hero
     (add-thing game (loc 0 0 0) (lib/create game "you")) 
     (merge game {:turn 0
                  :hero-id (:last-added-id game)})
+    
+    ;; testing state
+    ;; (add-thing game (engine/hero game) (lib/create game "invincibility")) 
+
+    ;; final prep
     (engine/message game (engine/hero game) "Welcome to the dungeon, Alchemist! Seek the Philosopher's Stone!")
     (engine/update-visibility game)))
 
@@ -38,9 +46,10 @@
       (let [o (get-thing game (first obs))]
         (if-let [mfn (:on-action o)]
           (recur
-            (let [new-aps (+ (:aps o) aps-added)
-	                game (if (== aps-added 0) game (! game o :aps new-aps))]
-	            ;; (println o)
+            (let [new-aps (+ (or (:aps o) 0) aps-added)
+	                game (if (== aps-added 0) game (! game o :aps new-aps))
+                  o (get-thing game o)]
+	            ;; (println (str new-aps " aps action on " (into {} o)))
 	            
 	            (if (> new-aps 0)
 	                (mfn game o)
