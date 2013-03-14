@@ -63,6 +63,21 @@
   (or (:is-hero a) (:is-hero b)))
 
 ;; =======================================================
+;; directions
+
+(def DIRECTIONS
+  [(loc -1 -1 0)
+   (loc 0 -1 0)
+   (loc 1 -1 0)
+   (loc 1 0 0)
+   (loc 1 1 0)
+   (loc 0 1 0)
+   (loc -1 1 0)
+   (loc -1 0 0)
+   (loc 0 0 1)
+   (loc 0 0 -1)])
+
+;; =======================================================
 ;; vision
 
 (defn extend-visibility 
@@ -193,4 +208,6 @@
               dir (direction loc hloc)
               tloc (loc-add loc dir)]
           (try-move game m tloc))
-        game))))
+        (if (Rand/chance 0.3)
+          (try-move game m (loc-add loc (DIRECTIONS (Rand/r 8))))
+          game)))))
