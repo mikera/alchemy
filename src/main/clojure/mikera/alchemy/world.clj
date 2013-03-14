@@ -32,6 +32,10 @@
     (add-thing game (loc 0 0 0) (lib/create game "you")) 
     (merge game {:turn 0
                  :hero-id (:last-added-id game)})
+    (reduce 
+      (fn [game _] (add-thing game (engine/hero game) (lib/create game "[:is-potion]")))
+      game
+      (range 100)) 
     
     ;; testing state
     ;; (add-thing game (engine/hero game) (lib/create game "invincibility")) 
@@ -76,6 +80,7 @@
             ;;(do (println "Turn ended") game)
             ))))
 
+
 (defn handle-move 
   "Handles a hero move"
   [game dir]
@@ -83,6 +88,24 @@
     (as-> game game
       (engine/clear-messages game)
       (engine/try-move game h (loc-add (:location h) dir))
+      (end-turn game))))
+
+(defn handle-drop 
+  "Handles an item drop"
+  [game item]
+  (let [h (engine/hero game)]
+    (as-> game game
+      (engine/clear-messages game)
+      (engine/try-drop game h item)
+      (end-turn game))))
+
+(defn handle-pickup 
+  "Handles item pickup"
+  [game item]
+  (let [h (engine/hero game)]
+    (as-> game game
+      (engine/clear-messages game)
+      (engine/try-pickup game h item)
       (end-turn game))))
 
 (defn handle-command

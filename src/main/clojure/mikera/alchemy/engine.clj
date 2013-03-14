@@ -42,6 +42,15 @@
 (defn hero-location ^mikera.orculje.engine.Location [game]
   (:location (hero game)))
 
+(defn the-name [game thing]
+  (text/the-name game thing))
+
+(defn a-name [game thing]
+  (text/a-name game thing))
+
+(defn base-name [game thing]
+  (text/base-name game thing))
+
 ;; =======================================================
 ;; vision
 
@@ -112,6 +121,18 @@
   (as-> game game
     (message game thing (str (text/verb-phrase :the thing "attack" :the target) "!"))
     (!+ game thing :aps -100)))
+
+(defn try-drop [game actor item]
+  (as-> game game
+    (message game actor (str (text/verb-phrase :the actor "drop" :the item) "."))
+    (move-thing game item (:location actor))
+    (!+ game actor :aps -100)))
+
+(defn try-pickup [game actor item]
+  (as-> game game
+    (message game actor (str (text/verb-phrase :the thing "take" :the item) "."))
+    (move-thing game item (:id actor))
+    (!+ game actor :aps -100)))
 
 (defn try-bump [game thing target]
   (cond

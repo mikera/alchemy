@@ -2,6 +2,7 @@
   (:use mikera.orculje.core)
   (:use mikera.cljutils.error)
   (:use mikera.orculje.util)
+  (:require [mikera.cljutils.loops :as loop])
   (:require [mikera.orculje.gui :as gui])
   (:require [mikera.alchemy.world :as world])
   (:require [mikera.alchemy.engine :as engine])
@@ -16,7 +17,11 @@
 (def ^Font font (Font. "Courier New" Font/PLAIN 20))
 (def SCREEN_WIDTH 80)
 (def SCREEN_HEIGHT 30)
-(def MESSAGE_WINDOW_HEIGHT 5) 
+(def RIGHT_AREA_WIDTH 0) 
+(def MESSAGE_WINDOW_HEIGHT 2) 
+(def MAX_DISPLAYED_MESSAGES 5)
+
+(declare main-handler) 
 
 (defn new-frame 
   (^JFrame []
@@ -32,6 +37,9 @@
       (.setCursorVisible jc false)
       (.setCursorBlink jc false)
       jc)))
+
+;; ===================================================
+;; main GUI display
 
 (defn displayable-thing 
   "Gets the thing that should be displayed in a given square 
@@ -73,7 +81,7 @@
 	        w (.getColumns jc)
 	        h (.getRows jc)
           hx (.x hloc) hy (.y hloc) hz (.z hloc) 
-	        gw (int (- w 20))
+	        gw (int (- w RIGHT_AREA_WIDTH))
 	        gh (int (- h MESSAGE_WINDOW_HEIGHT))
           ox (long (- hx (quot gw 2))) 
           oy (long (- hy (quot gh 2))) 
@@ -102,17 +110,17 @@
 	      game @(:game state) 
         w (.getColumns jc)
 	      h (.getRows jc)
-        mh MESSAGE_WINDOW_HEIGHT
-        sy (- h mh)
         msgs (:messages game)
         cm (count msgs)
+        mh MAX_DISPLAYED_MESSAGES
+        sy 0
         more-msgs? (> cm mh)]
-    (.fillArea jc \space (colour 0xC0C0C0) (colour 0x000000) (int 0) (int sy) (int w) (int mh))
+    (.fillArea jc \space (colour 0xC0C0C0) (colour 0x000000) (int 0) (int sy) (int w) (min cm mh))
 	  (.setForeground jc ^Color (colour 0xC0C0C0))
 	  (.setBackground jc ^Color (colour 0x000000))
     (dotimes [i (if more-msgs? (dec mh) cm)]
-      (gui/draw jc 0 (+ sy i) (msgs i)))
-    (if more-msgs? (gui/draw jc 0 (+ sy (dec mh)) "[press m to see more messages]"))))
+      (gui/draw jc 1 (+ sy i) (msgs i)))
+    (if more-msgs? (gui/draw jc 1 (+ sy (dec mh)) "[press m to see more messages]"))))
 
 (defn redraw-stats [state]
   (let [^JConsole jc (:console state)
@@ -120,7 +128,7 @@
         hero (engine/hero game) 
 	      w (.getColumns jc)
 	      h (.getRows jc)
-	      gw 20
+	      gw RIGHT_AREA_WIDTH
 	      gh (- h MESSAGE_WINDOW_HEIGHT)
           ]
     (.fillArea jc \space (colour 0xC0C0C0) (colour 0x301020) (int (- w gw)) (int 0) (int gw) (int gh))))
@@ -131,6 +139,104 @@
     (redraw-world state)
     (redraw-messages state)
     (redraw-stats state)))
+
+;; =======================================================
+;; action handling macro
+
+(defmacro handle-turn [& actions]
+  `(as-> ~'game ~'game
+     (engine/clear-messages ~'game)
+     ~@actions 
+     (world/end-turn ~'game)))
+
+;; ========================================================
+;; command
+
+(def COMMANDS
+  [["d" "Drop an item"]
+   ["e" "Eat a food item"]
+   ["i" "Inventory (select an item to examine it)"]
+   ["q" "Quaff potion"]])
+
+(defn show-commands [state]
+  (let [^JConsole jc (:console state)
+	      w (.getColumns jc)
+	      h (.getRows jc)]
+    (.fillArea jc \space (colour 0xC0C0C0) (colour 0x002010) 0 0 w h)
+    (.setForeground jc ^Color (colour 0xC0C0C0))
+    (.setBackground jc ^Color (colour 0x002010))   
+    (gui/draw jc 1 0 "Alchemy help: commands")
+    (dotimes [i (count COMMANDS)]
+      (gui/draw jc 3 (+ 2 i) (str ((COMMANDS i) 0) "  =  " ((COMMANDS i) 1))))
+
+    (reset! (:event-handler state)
+	          (fn [^String k]
+	            (let [sel (.indexOf "abcdefghijklmnopqrstuvwxyz" k)]
+	              (cond 
+	                :else 
+	                  (main-handler state))))))) 
+
+;; ========================================================
+;; item selection
+
+(defn redraw-item-select-screen [state msg items pos]
+  (let [^JConsole jc (:console state)
+	      w (.getColumns jc)
+	      h (.getRows jc)
+        c (count items)]
+    (.fillArea jc \space (colour 0xC0C0C0) (colour 0x201000) 0 0 w h)
+    (.setForeground jc ^Color (colour 0xC0C0C0))
+    (.setBackground jc ^Color (colour 0x201000))
+    (gui/draw jc 1 0 msg)
+    (loop/for-loop [i 0 (and (< (+ pos i) c) (< i 26)) (inc i)]
+      (.setForeground jc ^Color (colour 0xC0C0C0))
+      (gui/draw jc 3 (+ 2 i) (str "[ # ] = " (items (+ pos i))))
+      (.setForeground jc ^Color (colour 0xFFFF80))
+      (gui/draw jc 5 (+ 2 i) (char (+ (int \a) i))))
+    (.setForeground jc ^Color (colour 0xC0C0C0))
+    (gui/draw jc 0 29 (str " Page " (inc (quot pos 26)) " of " (inc (quot (dec c) 26)) "   "
+                           (if (> pos 0) "[UP to go back]  " "")
+                           (if (< (+ pos 25) c) "[DOWN for more]  " "")))
+    (.repaint jc)))
+
+
+(defn item-select-handler [state msg items pos action]
+  (let [c (count items)]
+    (redraw-item-select-screen state msg items pos)
+	  (reset! (:event-handler state)
+	          (fn [^String k]
+	            (let [sel (.indexOf "abcdefghijklmnopqrstuvwxyz" k)]
+	              (cond 
+	                (and (>= sel 0) (< (+ pos sel) c))
+	                  (action (+ sel pos))
+	                (and (> pos 0) (.contains "124" k))
+                    (item-select-handler state msg items (- pos 26) action)
+                  (and (< (+ pos 26) c) (.contains "689" k))
+                    (item-select-handler state msg items (+ pos 26) action)  
+	                (= "Q" k)
+	                  (main-handler state)
+	                :else 
+	                  :ignored))))))
+
+(defn show-inventory [state]
+  (let [game @(:game state)
+        hero (engine/hero game)
+        inv (vec (filter :is-item (contents hero)))]
+    (item-select-handler state "Examine your inventory:" 
+                      (vec (map (partial engine/base-name game) inv))
+                      0
+                      (fn [n] (main-handler state))))) 
+
+(defn choose-drop [state]
+  (let [game @(:game state)
+        hero (engine/hero game)
+        inv (vec (filter :is-item (contents hero)))]
+    (item-select-handler state "Drop an item:" 
+                      (vec (map (partial engine/base-name game) inv))
+                      0
+                      (fn [n] 
+                        (swap! (:game state) world/handle-drop (inv n))
+                        (main-handler state))))) 
 
 ;; ========================================================
 ;; Input state handler functions
@@ -150,6 +256,7 @@
 (defn map-synonyms [k]
   ({"5" "."} k k))
 
+
 (defn make-main-handler
   "Create main keypress handler, for general game position"
   ([state]
@@ -160,6 +267,9 @@
             (do
               (swap! (:game state) world/handle-move (or (move-dir-map k) (error "direction no recognised [" k "]")))
               (redraw-screen state))
+          (= "i" k) (show-inventory state)
+          (= "d" k) (choose-drop state)
+          (= "?" k) (show-commands state)
           :else
 	          (do 
 	            (swap! (:game state) world/handle-command k)
