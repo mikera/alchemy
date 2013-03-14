@@ -51,6 +51,11 @@
 (defn base-name [game thing]
   (text/base-name game thing))
 
+(defn test 
+  "Random skill test"
+  ([a b]
+    (> a (* (Rand/nextDouble) (+ a b)))))
+
 ;; =======================================================
 ;; vision
 

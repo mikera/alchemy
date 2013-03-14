@@ -110,7 +110,7 @@
 
 (defn define-temp-effects [lib]
   (-> lib
-    (proclaim "invincibility" "base temporary effect"
+    (proclaim "invincible" "base temporary effect"
               {:lifetime 2000
                :parent-modifiers [(modifier :colour-fg (colour (Rand/r 0x1000000)))
                                   (modifier :ARM (+ value 100))]
@@ -132,6 +132,7 @@
                :is-view-blocking false
                :is-blocking true
                :char (char \#)
+               :hps 30
                :z-order 60})))
 
 (defn define-doors [lib]
@@ -153,10 +154,11 @@
                                  :is-view-blocking false
                                  }
                :on-open (fn [game door actor]
-                          (update-thing game (merge door
-                                                    (if (? door :is-open)
-                                                      (? door :closed-properties)
-                                                      (? door :open-properties))))) 
+                          (update-thing game 
+                                        (merge door
+                                               (if (? door :is-open)
+                                                 (? door :closed-properties)
+                                                 (? door :open-properties))))) 
                :on-create (fn [door]
                             (merge door ((if (:is-open door) :open-properties :closed-properties) door)))
                :z-order 70})

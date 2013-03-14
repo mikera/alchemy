@@ -152,7 +152,10 @@
                                     (str "IN:" (? game hero :IN) STAT_SPACE)
                                     (str "WP:" (? game hero :WP) STAT_SPACE)
                                     (str "CH:" (? game hero :CH) STAT_SPACE)
-                                    (str "CR:" (? game hero :CR) STAT_SPACE))))))
+                                    (str "CR:" (? game hero :CR) STAT_SPACE)))
+      (.setForeground jc ^Color (colour 0xC0C0C0))
+      (let [effs (filter :is-effect (contents hero))]
+        (gui/draw jc 1 (+ sy 1) (apply str (distinct (map #(str (:name %) " ") effs))))))))
 
 (defn redraw-screen 
   "Redraw the main playing screen"
@@ -177,6 +180,7 @@
   [["d" "Drop an item"]
    ["e" "Eat a food item"]
    ["i" "Inventory (select an item to examine it)"]
+   ["m" "Show recent messages"]
    ["q" "Quaff potion"]])
 
 (defn show-commands [state]
@@ -196,6 +200,33 @@
 	              (cond 
 	                :else 
 	                  (main-handler state))))))) 
+
+;; ========================================================
+;; messages
+
+(defn show-messages [state]
+  (let [^JConsole jc (:console state)
+	      w (.getColumns jc)
+	      h (.getRows jc)
+        msg-log (:message-log @(:game state))
+        msg-list (vec (take 26 (mapcat 
+                                 (fn [[& ms] i] (map vector ms (repeat i))) 
+                                 msg-log
+                                 (range))))]
+    (.fillArea jc \space (colour 0xC0C0C0) (colour 0x010020) 0 0 w h)
+    (.setForeground jc ^Color (colour 0xC0C0C0))
+    (.setBackground jc ^Color (colour 0x010020))   
+    (gui/draw jc 1 0 "Recent message log:")
+    (dotimes [i (min (- SCREEN_HEIGHT 3) (count msg-list))]
+      (let [[ms j] (msg-list i)
+            p (float (/ 0.8 (+ 0.8 (* 0.2 j))))]
+        (.setForeground jc ^Color (Color. p p p))
+        (gui/draw jc 3 (+ 2 i) ms)))
+    (reset! (:event-handler state)
+	          (fn [^String k]
+	            (cond 
+	                :else 
+	                  (main-handler state)))))) 
 
 ;; ========================================================
 ;; item selection
@@ -239,14 +270,6 @@
 	                :else 
 	                  :ignored))))))
 
-(defn show-inventory [state]
-  (let [game @(:game state)
-        hero (engine/hero game)
-        inv (vec (filter :is-item (contents hero)))]
-    (item-select-handler state "Examine your inventory:" 
-                      (vec (map (partial engine/base-name game) inv))
-                      0
-                      (fn [n] (main-handler state))))) 
 
 (defn choose-drop [state]
   (let [game @(:game state)
@@ -258,6 +281,15 @@
                       (fn [n] 
                         (swap! (:game state) world/handle-drop (inv n))
                         (main-handler state))))) 
+
+(defn show-inventory [state]
+  (let [game @(:game state)
+        hero (engine/hero game)
+        inv (vec (filter :is-item (contents hero)))]
+    (item-select-handler state "Examine your inventory:" 
+                      (vec (map (partial engine/base-name game) inv))
+                      0
+                      (fn [n] (main-handler state))))) 
 
 (defn choose-pickup [state]
   (let [game @(:game state)
@@ -304,6 +336,7 @@
               (redraw-screen state))
           (= "i" k) (show-inventory state)
           (= "d" k) (choose-drop state)
+          (= "m" k) (show-messages state)
           (.contains ",p" k) (choose-pickup state)
           (= "?" k) (show-commands state)
           :else
