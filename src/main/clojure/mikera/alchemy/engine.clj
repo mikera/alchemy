@@ -24,14 +24,16 @@
 (defn message
   "Send a message to a given thing. Should be displayed iff it is the hero."
   ([game thing & ss]
-    (let [ss (map text/capitalise ss)
-          msgs (or (:messages game) [])
-          new-msgs (vec (concat msgs ss))
-          mlog (or (:message-log game) [msgs])
-          new-mlog (assoc mlog 0 new-msgs)]
-      (as-> game game
-        (assoc game :messages new-msgs)
-        (assoc game :message-log new-mlog)))))
+    (if (:is-hero thing)
+      (let [ss (map text/capitalise ss)
+           msgs (or (:messages game) [])
+           new-msgs (vec (concat msgs ss))
+           mlog (or (:message-log game) [msgs])
+           new-mlog (assoc mlog 0 new-msgs)]
+       (as-> game game
+         (assoc game :messages new-msgs)
+         (assoc game :message-log new-mlog)))
+      game)))
 
 
 ;; ======================================================
@@ -56,6 +58,9 @@
   "Random skill check"
   ([a b]
     (> a (* (Rand/nextDouble) (+ a b)))))
+
+(defn is-hostile [a b]
+  (or (:is-hero a) (:is-hero b)))
 
 ;; =======================================================
 ;; vision
@@ -121,7 +126,7 @@
   (as-> game game
     (if-let [on-use (? thing :on-use)]
       (on-use game thing actor)
-      (message game actor (str "You have no idea what to do with " (text/the-name thing) ".")))))
+      (message game actor (str "You have no idea what to do with " (the-name game thing) ".")))))
 
 (defn try-attack [game thing target]
   (as-> game game
@@ -144,9 +149,9 @@
   (cond
     (:is-tile target)
       (message game thing (str (text/verb-phrase :the thing "run") " into a wall."))
-    (:is-creature target)
+    (and (:is-creature target) (is-hostile thing target))
       (try-attack game thing target)
-    (:is-door target)
+    (and (:is-intelligent thing) (:is-door target))
       (try-open game thing target)
     :else
       (try-use game thing target)))
@@ -157,7 +162,12 @@
     (try-bump game thing target)
     (as-> game game
       (!+ game thing :aps -100)    
-      (move-thing game thing loc))))
+      (move-thing game thing loc)
+      (if-let [items (and (:is-hero thing) (seq (filter :is-item (get-things game loc))))]
+        (message game thing (str "There is " 
+                                 (text/and-string (map (partial a-name game) items)) 
+                                 " here."))
+        game))))
 
 ;; ===================================================
 ;; "AI"

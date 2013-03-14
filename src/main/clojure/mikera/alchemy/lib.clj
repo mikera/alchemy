@@ -324,6 +324,7 @@
   (-> lib
     (proclaim "you" "base creature" 
                    {:is-hero true
+                    :is-intelligent true
                     :is-hostile false
                     :on-action nil
                     :hps 15
