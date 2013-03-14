@@ -65,5 +65,10 @@
 			<artifactId>cljunit</artifactId>
 			<version>0.2.0</version>
 		</dependency>
+		<dependency>
+			<groupId>org.clojure</groupId>
+			<artifactId>math.combinatorics</artifactId>
+			<version>0.0.3</version>
+		</dependency>
 	</dependencies>
 </project>
