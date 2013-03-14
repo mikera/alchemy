@@ -61,14 +61,18 @@
 
 (defn shade-colour 
   "Produces a fade to black over distance"
-  ([^Color c ^double d2]
+  ([^Color c ^double d2 ^double base]
     (let [BD 50.0
-          p (/ BD (+ BD d2))]
+          p (/ BD (+ BD d2))
+          p (+ base (* p (- 1.0 base)))
+          op 0 
+          ;; op (* (- 1.0 p) base)
+          ]
       (if (< p 1.0)
         (let [p (/ p 255.0)
-              r (float (* p (.getRed c)))
-              g (float (* p (.getGreen c)))
-              b (float (* p (.getBlue c)))]
+              r (float (+ op (* p (.getRed c))))
+              g (float (+ op (* p (.getGreen c))))
+              b (float (+ op (* p (.getBlue c))))]
           (Color. r g b (float 1.0)))
         c))))
 
@@ -80,6 +84,7 @@
           hero (engine/hero game) 
           ^mikera.engine.BitGrid viz (or (:visibility game) (error "No visibility defined!"))
           ^mikera.orculje.engine.Location hloc (:location hero) 
+          ^mikera.engine.PersistentTreeGrid disc (or (:discovered-world game) (error "No discovered world?!?")) 
 	        w (.getColumns jc)
 	        h (.getRows jc)
           hx (.x hloc) hy (.y hloc) hz (.z hloc) 
@@ -94,14 +99,16 @@
                 ty (int (+ oy y))
                 d2 (let [dx (- hx tx) dy (- hy ty)] (+ (* dx dx) (* dy dy)))
                 visible? (.get viz tx ty hz)
+                dtile (.get disc tx ty hz)
+                base (if (and dtile (:is-blocking dtile)) 0.25 0.0)
                 t (if visible?
                     (displayable-thing game tx ty oz)
-                    world/BLANK_TILE)
+                    dtile)
                 t (or t world/BLANK_TILE)
                 ^Color fg (or (? t :colour-fg) (error "No foreground colour! on " (:name t)))
                 ^Color bg (or (? t :colour-bg) (error "No foreground colour! on " (:name t)))
-                ^Color fg (if visible? (shade-colour fg d2) fg)
-                ^Color bg (if visible? (shade-colour bg d2) bg)]
+                ^Color fg (if visible? (shade-colour fg d2 base) (shade-colour fg 1000000.0 base))
+                ^Color bg (if visible? (shade-colour bg d2 base) (shade-colour bg 1000000.0 base))]
 	          (.setForeground jc fg)
 	          (.setBackground jc bg)
 	          (gui/draw jc x y (char (? t :char))))))

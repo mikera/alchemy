@@ -3,6 +3,7 @@
   (:require [mikera.alchemy.lib :as lib]) 
   (:require [mikera.cljutils.find :as find]) 
   (:require [mikera.alchemy.dungeon :as dungeon]) 
+  (:import [mikera.engine PersistentTreeGrid]) 
   (:use mikera.orculje.core))
 
 (set! *warn-on-reflection* true)
@@ -26,7 +27,9 @@
     (lib/setup game)
     (dungeon/generate game)
     
+    ;; special data structures
     (assoc game :functions {:is-identified? engine/is-identified?})
+    (assoc game :discovered-world (PersistentTreeGrid.))
     
     ;; add the hero
     (add-thing game (loc 0 0 0) (lib/create game "you")) 

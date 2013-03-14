@@ -3,9 +3,9 @@
   (:use mikera.orculje.core)
   (:use mikera.cljutils.error)
   (:require [mikera.orculje.engine :as en])
-  (:import [mikera.engine BitGrid])
+  (:import [mikera.engine BitGrid PersistentTreeGrid])
   (:import [mikera.util Rand])
-  (:require[ mikera.orculje.text :as text]))
+  (:require [mikera.orculje.text :as text]))
 
 (set! *warn-on-reflection* true)
 (set! *unchecked-math* true)
@@ -70,9 +70,16 @@
   ([^BitGrid bg]
     (.visitSetBits bg (mikera.alchemy.BitGridExtender. bg))))
 
+(defn extend-discovery
+  "Extends tile discovery based on current visibility"
+  (^PersistentTreeGrid [^BitGrid bg ^PersistentTreeGrid discovered-world ^PersistentTreeGrid world]
+    (let [de (mikera.alchemy.DiscoveryExtender. bg discovered-world world)]
+      (.visitSetBits bg de)
+      (.grid de))))
+
 (def LOS_RAYS 100)
 (def RAY_INC 0.33)
-(def RAY_LEN 15)
+(def RAY_LEN 25)
 
 (defn update-visibility [game]
   (let [bg (BitGrid.)
@@ -91,7 +98,9 @@
                 (.set bg px py hz true)
                 (recur (+ d RAY_INC))))))))
     (extend-visibility bg) ;; extend visibility by 1 square in all directions
-    (assoc game :visibility bg)))
+    (as-> game game
+          (assoc game :visibility bg)
+          (assoc game :discovered-world (extend-discovery bg (:discovered-world game) (:world game))))))
 
 (defn is-square-visible? [^mikera.orculje.engine.Game game 
                           ^mikera.orculje.engine.Location loc]
