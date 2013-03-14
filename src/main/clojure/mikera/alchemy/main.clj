@@ -238,6 +238,16 @@
                         (swap! (:game state) world/handle-drop (inv n))
                         (main-handler state))))) 
 
+(defn choose-pickup [state]
+  (let [game @(:game state)
+        inv (vec (filter :is-item (get-things game (engine/hero-location game))))]
+    (item-select-handler state "Pick up an item:" 
+                      (vec (map (partial engine/base-name game) inv))
+                      0
+                      (fn [n] 
+                        (swap! (:game state) world/handle-pickup (inv n))
+                        (main-handler state))))) 
+
 ;; ========================================================
 ;; Input state handler functions
 ;;
@@ -269,6 +279,7 @@
               (redraw-screen state))
           (= "i" k) (show-inventory state)
           (= "d" k) (choose-drop state)
+          (.contains ",p" k) (choose-pickup state)
           (= "?" k) (show-commands state)
           :else
 	          (do 

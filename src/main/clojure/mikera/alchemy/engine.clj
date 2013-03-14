@@ -130,7 +130,7 @@
 
 (defn try-pickup [game actor item]
   (as-> game game
-    (message game actor (str (text/verb-phrase :the thing "take" :the item) "."))
+    (message game actor (str (text/verb-phrase :the actor "take" :the item) "."))
     (move-thing game item (:id actor))
     (!+ game actor :aps -100)))
 
