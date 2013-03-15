@@ -185,6 +185,33 @@
         (! game target :hps (- hps amount))))))
 
 ;; ======================================================
+;; combat
+
+(defn get-attacks [game thing]
+  (let [wielded-things (filter (fn [item] 
+                                 (and 
+                                   (:wielded item)
+                                   (:is-weapon item)
+                                   (#{:left-hand :right-hand :two-hands} (:wielded item)))) 
+                               (contents thing))
+        atts (or (seq wielded-things) (list (:attack thing)))]
+    atts))
+  
+(defn attack 
+  ([game actor target]
+    (let [atts (get-attacks game actor)]
+      (println (str (:name actor) " attacks with: " (vec atts)))
+      (reduce
+        (fn [game att] (attack game actor target att))
+        game
+        atts)))
+  ([game actor target weapon]
+    (as-> game game
+      (message game actor (str (text/verb-phrase :the actor "attack" :the target) "."))
+      (message game target (str (text/verb-phrase :the actor "attack" :the target) "!"))
+      (!+ game actor :aps -100))))
+
+;; ======================================================
 ;; actions
 
 (defn wait [game actor]
@@ -194,8 +221,7 @@
   (as-> game game
     (if (? door :is-locked)
       (message game actor (str (text/verb-phrase :the door) " is locked."))
-      ((:on-open door) game door actor))    
-    (!+ game actor :aps -100)))
+      ((:on-open door) game door actor))    ))
 
 (defn try-consume [game actor item]
   (as-> game game
@@ -212,8 +238,7 @@
 
 (defn try-attack [game thing target]
   (as-> game game
-    (message game thing (str (text/verb-phrase :the thing "attack" :the target) "!"))
-    (!+ game thing :aps -100)))
+    (attack game thing target)))
 
 (defn try-drop [game actor item]
   (as-> game game

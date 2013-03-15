@@ -342,7 +342,7 @@
     (define-doors)))
 
 ;; ===================================================
-;; library definitions - items
+;; library definitions - ITEMS
 
 
 (defmacro consume-function [[game item actor :as binds] & body]
@@ -389,6 +389,7 @@
                :z-order 25})
     (proclaim "base food" "base ingredient" 
               {:is-food true
+               :is-ingredient false
                :char (char 0x2663)
                :food-value 100
                :on-consume  (consume-function [game item actor]
@@ -515,17 +516,36 @@
                :on-consume (potion-effect-function "shielded")})
     (describe-potions)))
 
+(defn define-herbs [lib]
+  (-> lib
+    (proclaim "base herb" "base ingredient" 
+              {:char (char 0x1D67)
+               :colour-fg (colour 0x00B030) 
+               :unidentified-name "strange herb" 
+               :food-value 1})
+    (proclaim "fairgrass weed" "base herb" 
+              {})
+    (proclaim "ironroot herb" "base herb" 
+              {})
+    (proclaim "copperleaf herb" "base herb" 
+              {})
+    (proclaim "wolfsbane herb" "base herb" 
+              {})
+    (proclaim "limegrass herb" "base herb" 
+              {})))
+
 (defn define-ingredients [lib]
   (-> lib
-    ))
+    (define-herbs)))
 
 (defn define-food [lib]
   (-> lib
-    (proclaim "base mushroom" "base ingredient" 
+    (proclaim "base mushroom" "base food" 
               {:char (char 0x2660)
                :food-value 10})
     (proclaim "magic mushroom" "base mushroom" 
               {:level 1
+               :is-ingredient true
                :char (char 0x2660)
                :food-value 10
                :modifiers {:colour-fg 
@@ -551,7 +571,7 @@
                    :feet {}})
 
 (def ATT_NORMAL {:name "normal attack" 
-                 :ASK 1.0 :DSK 0.75 :AST 0.75 
+                 :ASK 0.75 :DSK 0.75 :AST 0.75 
                  :damage-type :normal})
 
 (def ATT_POISON_BITE {:name "poison bite" 
@@ -613,6 +633,7 @@
                                     (remove-thing game thing))
                                   game))
                     :attack ATT_NORMAL
+                    :speed 100
                     :aps 0
                     :z-order 75
                     :SK 5 :ST 5 :AG 5 :TG 5 :IN 5 :WP 5 :CH 5 :CR 5})
@@ -726,12 +747,27 @@
                  [k (post-process-properties v)])
                objects))))
 
+(defn assign-potion-ingredients 
+  "Assigns 1-3 ingredients to every potion"
+  ([objects]
+    (let [obs (vals objects)
+          ingreds (vec (map :name (filter :is-ingredient (vals objects))))
+          icount (count ingreds)
+          potions (filter :is-potion (vals objects))
+          rand-ingredients (fn []
+                             (vec (distinct 
+                                    (for [i (range (inc (Rand/d 2) ))]
+                                      (ingreds (Rand/r icount))))))
+          new-potions (map (fn [o] (assoc o :ingredients (rand-ingredients))) potions)]
+      (reduce (fn [obs o] (assoc obs (:name o) o)) objects new-potions))))
+
 (defn build-lib []
   (as-> {:objects {} ;; map of object name to properties
          } 
         lib 
     (define-objects lib)
-    (assoc lib :objects (post-process (:objects lib)))))
+    (assoc lib :objects (post-process (:objects lib)))
+    (assoc lib :objects (assign-potion-ingredients (:objects lib)))))
 
 (defn setup 
   "Sets up the object library for a given game"

@@ -97,7 +97,7 @@
   (let [h (engine/hero game)]
     (as-> game game
       (engine/clear-messages game)
-      (engine/try-move game h dir)
+      (engine/try-move-dir game h dir)
       (end-turn game))))
 
 (defn handle-drop 
