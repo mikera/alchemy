@@ -24,16 +24,18 @@
 (defn new-game []
   (as-> (empty-game) game
     ;; build game environment
+    (assoc game :max-level 1)
     (lib/setup game)
     (dungeon/generate game)
     
     ;; special data structures
-    (assoc game :functions {:is-identified? engine/is-identified?})
+    (assoc game :functions {:is-identified? engine/is-identified?
+                            :create lib/create})
     (assoc game :discovered-world (PersistentTreeGrid.))
     
     ;; add the hero
     (add-thing game (loc 0 0 0) (lib/create game "you")) 
-    (merge game {:turn 0
+    (merge game {:turn 0              
                  :hero-id (:last-added-id game)})
     (reduce 
       (fn [game _] (add-thing game (engine/hero game) (lib/create game "[:is-potion]")))
@@ -74,6 +76,7 @@
   "Called to update the game after every player turn"
   ([game]
     (let [hero (engine/hero game)
+          hloc (engine/hero-location game)
           aps-debt (- (:aps hero))
           turn (:turn game)]
       ;; (println (str "turn " turn " ending with aps used: " aps-debt))
@@ -82,6 +85,7 @@
             (engine/update-visibility game)
             (assoc game :turn (inc turn))
             (! game hero :aps 0)
+            (assoc game :max-level (max (.z hloc) (:max-level game)))
             ;;(do (println "Turn ended") game)
             ))))
 

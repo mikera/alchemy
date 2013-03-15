@@ -56,6 +56,7 @@
        :colour-fg (colour 0xFFFF00)
        :colour-bg (colour 0x000000)
        :freq 1.0
+       :level-min 0
        :is-visible true
        :z-order 0}) 
     (proclaim "base thing" "base object"
@@ -108,7 +109,42 @@
                                                      (assoc :aps 0)
                                                      (assoc :lifetime lifetime)))))) 
                :aps 0     
+               :lifetime 3000})
+    (proclaim "base periodic effect" "base thing" 
+              {:on-action (fn [game effect]
+                            (let [elapsed (:aps effect)
+                                  prev-lifetime (:lifetime effect)
+                                  lifetime (- prev-lifetime elapsed)
+                                  period (:period effect)
+                                  target (:location effect)
+                                  periods (- (quot prev-lifetime period) (quot lifetime period))]
+                              ;; (println "effect time elapsed = " elapsed " remainging lifetime = " lifetime)
+                              (as-> game game
+                                (loop [i periods game game]
+                                  (if (> i 0)
+                                    (recur (dec i) ((:on-effect) game effect target))
+                                    game))
+                                (if (<= lifetime 0)
+                                  (remove-thing game effect)
+                                  (update-thing game (-> effect
+                                                       (assoc :aps 0)
+                                                       (assoc :lifetime lifetime))))))) 
+               :on-effect (fn [game effect target]
+                            game)
+               :aps 0     
+               :period 300
                :lifetime 3000})))
+
+(defn define-periodic-effects [lib]
+  (-> lib
+    (proclaim "healing" "base periodic effect"
+              {:lifetime 2000
+               :period 200
+               :heal-amount 1
+               :parent-modifiers [(modifier :colour-bg (colour 0x004040))]
+               :on-effect (fn [game effect target]
+                            (engine/heal game target (:heal-amount effect)))}
+              )))
 
 (defn define-temp-effects [lib]
   (-> lib
@@ -122,6 +158,7 @@
 (defn define-effects [lib]
   (-> lib
     (define-base-effects)
+    (define-periodic-effects)
     (define-temp-effects)))
 
 ;; ===================================================
@@ -217,9 +254,9 @@
   (when-not (and (vector? binds) (every? symbol? binds)) (error "consume function requires [game actor item] bindings")) 
   `(fn [~game ~item ~actor ]
      (as-> ~game ~game
-       (engine/identify ~game ~item)
        (remove-thing ~game ~item)
        ~@body
+       (engine/identify ~game ~item)
        )))
 
 (defn define-base-item [lib]
@@ -392,15 +429,18 @@
   (vals (:objects (:lib game))))
 
 (defn create-type 
-  [game pred]
-  (let [objs (seq (vals (:objects (:lib game))))]
-    (loop [v nil cumfreq 0.0 objs objs]
-      (if objs
-        (let [o (first objs)
-              freq-o (if (pred o) (double (:freq o)) 0.0)
-              keeper? (< (* (Rand/nextDouble) (+ cumfreq freq-o)) freq-o)]
-          (recur (if keeper? o v) (+ cumfreq freq-o) (next objs)))
-        (thing v)))))
+  ([game pred]
+    (create-type game pred (:max-level game)))
+  ([game pred level]
+    (let [objs (seq (vals (:objects (:lib game))))]
+      (loop [v nil cumfreq 0.0 objs objs]
+        (if objs
+          (let [o (first objs)
+                valid? (and (pred o) (>= level (or (:level-min o) 0)))
+                freq-o (if (pred o) (double (:freq o)) 0.0)
+                keeper? (< (* (Rand/nextDouble) (+ cumfreq freq-o)) freq-o)]
+            (recur (if keeper? o v) (+ cumfreq freq-o) (next objs)))
+          (thing v))))))
 
 (defn create
   "Creates a new thing using the library of the specified game"
@@ -415,6 +455,9 @@
             (create-type game (keyword (.substring name 2 (dec (count name)))))
           :else
             (error "Can't find thing in library [" name "]" ))))))
+
+(alter-var-root (var engine/create) (fn [old] create) )
+(alter-var-root (var engine/create-type) (fn [old] create-type))
 
 ;; ==============================================
 ;; library main build

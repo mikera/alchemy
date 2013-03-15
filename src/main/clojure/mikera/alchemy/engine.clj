@@ -63,6 +63,13 @@
   (or (:is-hero a) (:is-hero b)))
 
 ;; =======================================================
+;; item creation
+;; (these are set later by lib)
+
+(declare create)
+(declare create-type)
+
+;; =======================================================
 ;; directions
 
 (def DIRECTIONS
@@ -135,6 +142,18 @@
 (defn is-identified? [game thing]
   (or (:is-identified thing)
       (:is-identified ((:objects (:lib game)) (:name thing)))))
+
+;; ======================================================
+;; damage and healing
+
+(defn heal [game target amount]
+  (let [new-hps (min (:hsp-max target) 
+                     (+ (:hps target) amount))]
+    (as-> game game
+          (! game target :hps new-hps))))
+
+(defn add-effect [game target effect]
+  (add-thing game target ()))
 
 ;; ======================================================
 ;; actions
