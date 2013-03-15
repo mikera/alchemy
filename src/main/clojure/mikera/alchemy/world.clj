@@ -53,7 +53,7 @@
   ;; (println (str "Monster turn: " (:turn game)))
   (loop [game game
          obs (seq (all-things game))]
-    (if obs
+    (if (seq obs)
       (if-let [o (get-thing game (first obs))]
         (if-let [mfn (:on-action o)]
           (recur

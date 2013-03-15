@@ -98,7 +98,7 @@
                :is-invisible true
                :char (char \#)
                :z-order -1})
-    (proclaim "base temporary effect" "base thing" 
+    (proclaim "base temporary effect" "base effect" 
               {:on-action (fn [game effect]
                             (let [elapsed (:aps effect)
                                   lifetime (- (:lifetime effect) elapsed)]
@@ -110,19 +110,19 @@
                                                      (assoc :lifetime lifetime)))))) 
                :aps 0     
                :lifetime 3000})
-    (proclaim "base periodic effect" "base thing" 
+    (proclaim "base periodic effect" "base effect" 
               {:on-action (fn [game effect]
                             (let [elapsed (:aps effect)
                                   prev-lifetime (:lifetime effect)
                                   lifetime (- prev-lifetime elapsed)
                                   period (:period effect)
-                                  target (:location effect)
+                                  target (parent game effect)
                                   periods (- (quot prev-lifetime period) (quot lifetime period))]
                               ;; (println "effect time elapsed = " elapsed " remainging lifetime = " lifetime)
                               (as-> game game
                                 (loop [i periods game game]
                                   (if (> i 0)
-                                    (recur (dec i) ((:on-effect) game effect target))
+                                    (recur (dec i) ((:on-effect effect) game effect target))
                                     game))
                                 (if (<= lifetime 0)
                                   (remove-thing game effect)
@@ -325,6 +325,12 @@
         updated-potion-map (zipmap (map :name potions) potions)]
     (assoc lib :objects (merge (:objects lib) updated-potion-map))))
 
+(defn potion-effect-function [effect-name]
+  (fn [game potion target]
+    (as-> game game
+          (engine/add-effect game target effect-name)
+          (remove-thing game potion))))
+
 (defn define-potions [lib]
   (-> lib
     (proclaim "strengthening potion" "base potion" 
@@ -343,7 +349,7 @@
                                (engine/message game actor
                                  (if (> new-hps hps) "You feel healthier." "You feel very healthy."))))})
     (proclaim "healing potion" "base potion" 
-              {})
+              {:on-consume (potion-effect-function "healing")})
     (describe-potions)))
 
 (defn define-ingredients [lib]

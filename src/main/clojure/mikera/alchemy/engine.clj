@@ -45,6 +45,12 @@
 (defn hero-location ^mikera.orculje.engine.Location [game]
   (:location (hero game)))
 
+(defn hps [thing]
+  (or (:hps thing) (error "No :hps avialable for " thing)))
+
+(defn hps-max [thing]
+  (or (:hps-max thing) (error "No :hps-max avialable for " thing)))
+
 (defn the-name [game thing]
   (text/the-name game thing))
 
@@ -147,13 +153,13 @@
 ;; damage and healing
 
 (defn heal [game target amount]
-  (let [new-hps (min (:hsp-max target) 
-                     (+ (:hps target) amount))]
+  (let [new-hps (min (hps-max target) 
+                     (+ (hps target) amount))]
     (as-> game game
           (! game target :hps new-hps))))
 
 (defn add-effect [game target effect]
-  (add-thing game target ()))
+  (add-thing game target (create game effect)))
 
 ;; ======================================================
 ;; actions
