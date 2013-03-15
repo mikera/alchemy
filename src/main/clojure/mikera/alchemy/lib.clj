@@ -138,8 +138,8 @@
 (defn define-periodic-effects [lib]
   (-> lib
     (proclaim "healing" "base periodic effect"
-              {:lifetime 2000
-               :period 200
+              {:lifetime 1000
+               :period 100
                :heal-amount 1
                :parent-modifiers [(modifier :colour-bg (colour 0x004040))]
                :on-effect (fn [game effect target]
@@ -147,9 +147,19 @@
               )
     (proclaim "poisoned" "base periodic effect"
               {:lifetime 4000
-               :period 300
+               :period 400
                :damage-amount 1
                :parent-modifiers [(modifier :colour-bg (colour 0x008000))]
+               :on-effect (fn [game effect target]
+                            (engine/damage game target (:damage-amount effect) :poison))}
+              )
+    (proclaim "sick" "base periodic effect"
+              {:lifetime 100000
+               :period 10000
+               :damage-amount 2
+               :parent-modifiers (vec (concat [(modifier :colour-bg (colour 0x400040))]
+                                              (map #(modifier % (long* value 0.8)) 
+                                                   [:SK :ST :AG :TG :IN :WP :CH :CR])))
                :on-effect (fn [game effect target]
                             (engine/damage game target (:damage-amount effect) :poison))}
               )))
@@ -160,6 +170,12 @@
               {:lifetime 2000
                :parent-modifiers [(modifier :colour-fg (colour (Rand/r 0x1000000)))
                                   (modifier :ARM (+ value 100))]
+               }
+              )
+    (proclaim "shielded" "base temporary effect"
+              {:lifetime 5000
+               :parent-modifiers [(modifier :colour-fg (colour (Rand/r 0x90FFFF)))
+                                  (modifier :ARM (+ value 5))]
                }
               )))
 
@@ -267,6 +283,16 @@
        (engine/identify ~game ~item)
        )))
 
+
+(defn potion-effect-function [effect-name]
+  (fn [game potion target]
+    (as-> game game
+          (remove-thing game potion)
+          (engine/add-effect game target effect-name)
+          (engine/identify game potion)
+)))
+
+
 (defn define-base-item [lib]
   (-> lib
     (proclaim "base item" "base thing" 
@@ -333,12 +359,6 @@
         updated-potion-map (zipmap (map :name potions) potions)]
     (assoc lib :objects (merge (:objects lib) updated-potion-map))))
 
-(defn potion-effect-function [effect-name]
-  (fn [game potion target]
-    (as-> game game
-          (engine/add-effect game target effect-name)
-          (remove-thing game potion))))
-
 (defn define-potions [lib]
   (-> lib
     (proclaim "skill potion" "base potion" 
@@ -377,6 +397,10 @@
               {:on-consume (potion-effect-function "healing")})
     (proclaim "poison potion" "base potion" 
               {:on-consume (potion-effect-function "poisoned")})
+    (proclaim "sickness potion" "base potion" 
+              {:on-consume (potion-effect-function "sick")})
+    (proclaim "shielding potion" "base potion" 
+              {:on-consume (potion-effect-function "sick")})
     (describe-potions)))
 
 (defn define-ingredients [lib]
@@ -415,6 +439,14 @@
                     :is-creature true
                     :is-hostile true
                     :on-action engine/monster-action
+                    :on-death (fn [game thing]
+                                (if-let [l (location thing)]
+                                  (as-> game game
+                                    (if-let [dtype (and (> (or (:drop-chance thing) 0) (Rand/nextDouble)) (:drop-type thing))]
+                                      (add-thing game l (engine/create game dtype (or (:level thing) 1)))
+                                      game)
+                                    (remove-thing game thing))
+                                  game))
                     :aps 0
                     :z-order 75
                     :SK 5 :ST 5 :AG 5 :TG 5 :IN 5 :WP 5 :CH 5 :CR 5})
@@ -424,7 +456,7 @@
                     :char \r
                     :colour-fg (colour 0xB0A090)})
     (proclaim "rat" "base rat" 
-                   {:level-min 1})
+                   {:level-min 0})
     (proclaim "base snake" "base creature" 
                    {:SK 5 :ST 3 :AG 8 :TG 4 :IN 2 :WP 6 :CH 4 :CR 1
                     :is-reptile true
@@ -514,6 +546,7 @@
 (defn post-process-properties [v]
   (as-> v v
     (if (.startsWith (:name v) "base ") (assoc v :freq 0.0) v)
+    (assoc v :level (or (:level v) (:level-min v) 1))
     (if (and (:hps v) (not (:hps-max v))) (assoc v :hps-max (:hps v)) v)))
 
 (defn post-process 
