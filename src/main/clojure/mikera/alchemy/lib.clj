@@ -64,7 +64,7 @@
        :colour-fg (colour 0xFFFF00)
        :colour-bg (colour 0x000000)
        :freq 1.0
-       :level-min 0
+       :level 0
        :is-visible true
        :z-order 0}) 
     (proclaim "base thing" "base object"
@@ -426,7 +426,15 @@
                                (as-> game game 
                                      (reduce (fn [game t] (remove-thing game t)) game ps)
                                      (engine/message game actor "You feel much better!"))
-                               (engine/message game actor "Hmmm that was refreshing.")))})
+                               (engine/message game actor "Hmmm that was quite refreshing.")))})
+    (proclaim "cleansing potion" "base potion" 
+              {:level 7 
+               :on-consume (consume-function [game item actor]
+                             (if-let [ps (seq (filter :is-effect (contents actor)))]
+                               (as-> game game 
+                                     (reduce (fn [game t] (remove-thing game t)) game ps)
+                                     (engine/message game actor "You feel great refreshment!"))
+                               (engine/message game actor "You feel totally refreshed.")))})
     (proclaim "healing potion" "base potion" 
               {:level 0
                :on-consume (potion-effect-function "healing")})
@@ -480,7 +488,7 @@
                  :ASK 1.0 :DSK 0.75 :AST 0.75 
                  :damage-type :normal})
 
-(def ATT_NORMAL {:name "poison bite" 
+(def ATT_POISON_BITE {:name "poison bite" 
                  :ASK 1.0 :DSK 0.75 :AST 0.75 
                  :damage-type :normal
                  :damage-effect "poisoned"})
@@ -548,14 +556,14 @@
                     :char \r
                     :colour-fg (colour 0xB0A090)})
     (proclaim "rat" "base rat" 
-                   {:level-min 0})
+                   {:level 0})
     
     (proclaim "base snake" "base creature" 
                    {:SK 5 :ST 3 :AG 8 :TG 4 :IN 2 :WP 6 :CH 4 :CR 1
                     :is-reptile true
                     :hps 3
                     :char \s
-                    :level-min 1
+                    :level 1
                     :colour-fg (colour 0x60C060)})
     (proclaim "grass snake" "base snake"
                    {})
@@ -563,7 +571,8 @@
                    {:SK 9 :ST 6 :AG 10 :TG 7 :IN 4 :WP 9 :CH 8 :CR 3
                     :char \c
                     :hps 15
-                    :level-min 4
+                    :level-min 6
+                    :attack ATT_POISON_BITE
                     :colour-fg (colour 0xD0A060)})))
 
 (defn define-hero [lib]
