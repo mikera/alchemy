@@ -192,25 +192,42 @@
               {:lifetime 2000
                :parent-modifiers [(modifier :colour-fg (colour (Rand/r 0x1000000)))
                                   (modifier :ARM (+ value 100))]
-               }
-              )
+               })
     (proclaim "shielded" "base temporary effect"
               {:lifetime 5000
                :parent-modifiers [(modifier :colour-fg (colour (Rand/r 0x90FFFF)))
                                   (modifier :ARM (+ value 5))]
-               }
+               })
+    (proclaim "slowed" "base temporary effect"
+              {:lifetime 2000
+               :parent-modifiers [(modifier :speed (long* value 0.7))]})  
+    (proclaim "slowed!" "base temporary effect"
+              {:lifetime 3000
+               :parent-modifiers [(modifier :speed (long* value 0.5))]})  
+    (proclaim "hasted" "base temporary effect"
+              {:lifetime 2000
+               :parent-modifiers [(modifier :speed (+ value 50))]})  
+    (proclaim "hasted!" "base temporary effect"
+              {:lifetime 1500
+               :parent-modifiers [(modifier :speed (+ value 100))]})  
+    (proclaim "weakened" "base temporary effect"
+              {:lifetime 3000
+               :parent-modifiers [(modifier :ST (long* value 0.7))
+                                  (modifier :TG (long* value 0.7))]})  
+    (proclaim "weakened!" "base temporary effect"
+              {:lifetime 4000
+               :parent-modifiers [(modifier :ST (long* value 0.5))
+                                  (modifier :TG (long* value 0.5))
+                                  (modifier :AG (long* value 0.7))]})  
     (proclaim "confused" "base temporary effect"
               {:lifetime 20000
-               :parent-modifiers [(modifier :confusion (+ value 3))]
-               })       
+               :parent-modifiers [(modifier :confusion (+ value 3))]})       
     (proclaim "confused!" "base temporary effect"
               {:lifetime 10000
-               :parent-modifiers [(modifier :confusion (+ value 8))]
-               })
+               :parent-modifiers [(modifier :confusion (+ value 8))]})
     (proclaim "confused!!" "base temporary effect"
               {:lifetime 5000
-               :parent-modifiers [(modifier :confusion (+ value 20))]
-               }))))
+               :parent-modifiers [(modifier :confusion (+ value 20))]})))
 
 (defn proclaim-stat-effects 
   ([lib]
@@ -469,9 +486,33 @@
     (proclaim "regeneration potion" "base potion" 
               {:level 8
                :on-consume (potion-effect-function "regenerating")})
+    (proclaim "weakness potion" "base potion" 
+              {:level 0
+               :on-consume (potion-effect-function "weakened")})
+    (proclaim "confusion potion" "base potion" 
+              {:level 0
+               :on-consume (potion-effect-function "confused")})
+    (proclaim "slow potion" "base potion" 
+              {:level (Rand/d 10) 
+               :on-consume (potion-effect-function "slowed")})
+    (proclaim "extreme slow potion" "base potion" 
+              {:level (Rand/d 20) 
+               :on-consume (potion-effect-function "slowed!")})
+    (proclaim "speed potion" "base potion" 
+              {:level (Rand/d 10) 
+               :on-consume (potion-effect-function "hasted")})
+    (proclaim "extreme speed potion" "base potion" 
+              {:level (Rand/d 20) 
+               :on-consume (potion-effect-function "hasted!")})
+    (proclaim "greater confusion potion" "base potion" 
+              {:level (Rand/d 10) 
+               :on-consume (potion-effect-function "confused!")})
+    (proclaim "extreme confusion potion" "base potion" 
+              {:level (Rand/d 20) 
+               :on-consume (potion-effect-function "confused!!")})
     (proclaim "shielding potion" "base potion" 
               {:level 3
-               :on-consume (potion-effect-function "sick")})
+               :on-consume (potion-effect-function "shielded")})
     (describe-potions)))
 
 (defn define-ingredients [lib]
