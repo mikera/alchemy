@@ -53,6 +53,7 @@
   ;; (println (str "Monster turn: " (:turn game)))
   (loop [game game
          obs (seq (all-things game))]
+    
     (if (seq obs)
       (if-let [o (get-thing game (first obs))]
         (if-let [mfn (:on-action o)]
@@ -65,8 +66,8 @@
                     (recur (mfn game o) (dec max-moves))
                     (if (> (:aps o) 0) ;; check to remove any remaining aps
                       (! game o :aps 0) 
-                      game)))))
-	            
+                      game))
+                  game)))
             (next obs))
           (recur game (next obs)))
         (recur game (next obs)))
