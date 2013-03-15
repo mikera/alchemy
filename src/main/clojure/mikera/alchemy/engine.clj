@@ -1,5 +1,6 @@
 (ns mikera.alchemy.engine
   (:require [mikera.cljutils.find :as find]) 
+  (:use mikera.orculje.util)
   (:use mikera.orculje.core)
   (:use mikera.cljutils.error)
   (:require [mikera.orculje.engine :as en])
@@ -196,20 +197,43 @@
                                (contents thing))
         atts (or (seq wielded-things) (list (:attack thing)))]
     atts))
+
+(defn get-best-dsk [game thing]
+  (let [wielded-things (filter (fn [item] 
+                                 (and 
+                                   (:wielded item)
+                                   (:DSK item))) 
+                               (contents thing))
+        defs (concat (seq wielded-things) (list (:attack thing)) {:DSK 0})]
+    (apply max (map #(or (:DSK %) 0)  defs))))
   
 (defn attack 
   ([game actor target]
-    (let [atts (get-attacks game actor)]
-      (println (str (:name actor) " attacks with: " (vec atts)))
+    (let [atts (get-attacks game actor)
+          att-cost 100
+          speed (or (? actor :speed) 100)]
+      ;;(println (str (:name actor) " attacks with: " (vec atts)))
       (reduce
         (fn [game att] (attack game actor target att))
-        game
+        (!+ game actor :aps (long* (/ (* -100.0 att-cost) speed)))
         atts)))
   ([game actor target weapon]
-    (as-> game game
-      (message game actor (str (text/verb-phrase :the actor "attack" :the target) "."))
-      (message game target (str (text/verb-phrase :the actor "attack" :the target) "!"))
-      (!+ game actor :aps -100))))
+    (let [ask (* (? actor :SK) (? weapon :ASK))
+          dsk (* (? target :SK) (get-best-dsk game target))
+          dodge (* 0.25 (? target :AG) (+ 1 (or (? target :dodge) 0)))]
+      (cond 
+        (not (check ask dodge))
+           (as-> game game
+             (message game actor (str (text/verb-phrase :the actor "miss" :the target) "."))
+             (message game target (str (text/verb-phrase :the actor "miss" :the target) "."))) 
+        (not (check ask dodge))
+           (as-> game game
+             (message game actor (str (text/verb-phrase :the target "block") " your attack."))
+             (message game target (str (text/verb-phrase :the target "block") " the attack of " (the-name game actor) "."))) 
+        :else 
+          (as-> game game
+            (message game actor (str (text/verb-phrase :the actor "hit" :the target) "."))
+            (message game target (str (text/verb-phrase :the actor "hit" :the target) "!")))))))
 
 ;; ======================================================
 ;; actions

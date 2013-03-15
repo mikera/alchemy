@@ -11,7 +11,7 @@
 ;; library constants
 
 (def BLANK_TILE_PROPS {:name "nothing"
-                       :is-proper-name true
+                       :proper-name "nothing"
                        :is-tile true
                        :char \space
                        :colour-fg (colour 0x000000)
