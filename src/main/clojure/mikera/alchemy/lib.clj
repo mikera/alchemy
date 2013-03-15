@@ -199,7 +199,18 @@
                :parent-modifiers [(modifier :colour-fg (colour (Rand/r 0x90FFFF)))
                                   (modifier :ARM (+ value 5))]
                }
-              )))
+    (proclaim "confused" "base temporary effect"
+              {:lifetime 20000
+               :parent-modifiers [(modifier :confusion (+ value 3))]
+               })       
+    (proclaim "confused!" "base temporary effect"
+              {:lifetime 10000
+               :parent-modifiers [(modifier :confusion (+ value 8))]
+               })
+    (proclaim "confused!!" "base temporary effect"
+              {:lifetime 5000
+               :parent-modifiers [(modifier :confusion (+ value 20))]
+               }))))
 
 (defn proclaim-stat-effects 
   ([lib]
