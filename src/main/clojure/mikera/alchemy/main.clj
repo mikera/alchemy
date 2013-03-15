@@ -4,6 +4,7 @@
   (:use mikera.orculje.util)
   (:require [mikera.cljutils.loops :as loop])
   (:require [mikera.orculje.gui :as gui])
+  (:require [mikera.orculje.text :as text])  
   (:require [mikera.alchemy.world :as world])
   (:require [mikera.alchemy.engine :as engine])
   (:import [javax.swing JFrame JComponent])
@@ -159,15 +160,16 @@
       (.setForeground jc ^Color TEXT_COLOUR)
       (gui/draw jc 16 (+ sy 0) (str (str "SK:" (? game hero :SK) STAT_SPACE)
                                     (str "ST:" (? game hero :ST) STAT_SPACE)
-                                    (str "AG:" (? game hero :IN) STAT_SPACE)
-                                    (str "TG:" (? game hero :WP) STAT_SPACE)
+                                    (str "AG:" (? game hero :AG) STAT_SPACE)
+                                    (str "TG:" (? game hero :TG) STAT_SPACE)
                                     (str "IN:" (? game hero :IN) STAT_SPACE)
                                     (str "WP:" (? game hero :WP) STAT_SPACE)
                                     (str "CH:" (? game hero :CH) STAT_SPACE)
                                     (str "CR:" (? game hero :CR) STAT_SPACE)))
       (.setForeground jc ^Color TEXT_COLOUR)
-      (let [effs (filter :is-effect (contents hero))]
-        (gui/draw jc 1 (+ sy 1) (apply str (distinct (map #(str (:name %) " ") effs))))))))
+      (let [effs (filter :is-effect (contents hero))
+            eff-string (apply str (distinct (map #(str (text/capitalise (:name %)) "  ") effs)))]
+        (gui/draw jc 1 (+ sy 1) (text/truncate-with-dots eff-string (- w 2)))))))
 
 (defn redraw-screen 
   "Redraw the main playing screen"
@@ -305,8 +307,9 @@
   (let [^JConsole jc (:console state)
         w (.getColumns jc)
 	      h (.getRows jc)
+       game @(:game state)
        ]
-    (redraw-world state loc)
+    (redraw-world state (engine/hero-location game))
     (redraw-stats state)
     (.fillArea jc \space TEXT_COLOUR (colour 0x200020) 0 0 w 1)
     (.setForeground jc ^Color TEXT_COLOUR)

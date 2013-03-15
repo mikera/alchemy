@@ -7,7 +7,6 @@
   (:require [clojure.math.combinatorics :as combo])
   (:import [mikera.util Rand]))
 
-
 ;; ===================================================
 ;; library constants
 
@@ -18,6 +17,15 @@
                        :colour-fg (colour 0x000000)
                        :colour-bg (colour 0x000000)
                        :z-order (long -100)})
+
+(def MAIN_STATS {:SK {:name "skill"}
+                 :ST {:name "strength"}
+                 :AG {:name "agility"}
+                 :TG {:name "toughness"}
+                 :IN {:name "intelligence"}
+                 :WP {:name "willpower"}
+                 :CH {:name "charisma"}
+                 :CR {:name "craft"}})
 
 ;; ===================================================
 ;; utility functions for library building
@@ -135,6 +143,7 @@
                :period 300
                :lifetime 3000})))
 
+
 (defn define-periodic-effects [lib]
   (-> lib
     (proclaim "healing" "base periodic effect"
@@ -148,11 +157,16 @@
     (proclaim "poisoned" "base periodic effect"
               {:lifetime 4000
                :period 400
+               :is-poison-effect true
                :damage-amount 1
                :parent-modifiers [(modifier :colour-bg (colour 0x008000))]
                :on-effect (fn [game effect target]
                             (engine/damage game target (:damage-amount effect) :poison))}
               )
+    (proclaim "poisoned!" "poisoned" {:damage-amount 2 :lifetime 6000 :period 400})
+    (proclaim "poisoned!!" "poisoned" {:damage-amount 3 :lifetime 6000 :period 300})
+    (proclaim "poisoned!!!" "poisoned" {:damage-amount 3 :lifetime 6000 :period 200})
+    (proclaim "poisoned!!!!" "poisoned" {:damage-amount 3 :lifetime 6000 :period 100})    
     (proclaim "sick" "base periodic effect"
               {:lifetime 100000
                :period 10000
@@ -179,11 +193,32 @@
                }
               )))
 
+(defn proclaim-stat-effects 
+  ([lib]
+    (reduce (fn [lib stat] (proclaim-stat-effects lib stat)) lib (keys MAIN_STATS)))
+  ([lib stat]
+    (let [BOOST_EFFECT (Rand/d 5)
+          statname (or (:name (MAIN_STATS stat)) (error "No name for stat " stat))]
+      (-> lib 
+        (proclaim (str statname " boost") "base temporary effect"
+                  {:level (Rand/d 20)
+                   :lifetime (+ 3000 (* 1000 (Rand/r 5)))
+                   :parent-modifiers [(modifier stat (+ value BOOST_EFFECT))]}
+                  )
+        (proclaim (str statname " drain") "base temporary effect"
+                  {:level (Rand/d 10)
+                   :lifetime (+ 5000 (* 2000 (Rand/r 5)))
+                   :parent-modifiers [(modifier stat (long* value 0.8))]}
+                  )))))
+
 (defn define-effects [lib]
   (-> lib
     (define-base-effects)
     (define-periodic-effects)
-    (define-temp-effects)))
+    (define-temp-effects)
+    (proclaim-stat-effects)))
+
+
 
 ;; ===================================================
 ;; Library-definitions - scenery
@@ -359,48 +394,51 @@
         updated-potion-map (zipmap (map :name potions) potions)]
     (assoc lib :objects (merge (:objects lib) updated-potion-map))))
 
+(defn proclaim-stat-potions 
+  ([lib]
+    (reduce (fn [lib stat] (proclaim-stat-potions lib stat)) lib (keys MAIN_STATS)))
+  ([lib stat]
+    (let [statname (:name (MAIN_STATS stat))]
+      (-> lib
+        (proclaim (str "gain " statname " potion") "base potion" 
+              {:level (+ 5 (Rand/d 15))
+               :on-consume  (consume-function [game item actor]
+                              (!+ actor stat 1) (engine/message game actor (str "You feel you have gained in " statname "!")))})
+        (proclaim (str statname " boost potion") "base potion" 
+              {:level (Rand/d 15)
+               :on-consume (potion-effect-function (str statname " boost"))})))))
+
 (defn define-potions [lib]
   (-> lib
-    (proclaim "skill potion" "base potion" 
-              {:on-consume  (consume-function [game item actor]
-                              (!+ actor :SK 1) (engine/message game actor "You feel more skillful!"))})
-    (proclaim "strengthening potion" "base potion" 
-              {:on-consume  (consume-function [game item actor]
-                              (!+ actor :ST 1) (engine/message game actor "You feel stronger!"))})
-    (proclaim "agility potion" "base potion" 
-              {:on-consume  (consume-function [game item actor]
-                              (!+ actor :AG 1) (engine/message game actor "You feel more agile!"))})
-    (proclaim "toughness potion" "base potion" 
-              {:on-consume  (consume-function [game item actor]
-                              (!+ actor :TG 1) (engine/message game actor "You feel really tough!"))})
-    (proclaim "intelligence potion" "base potion" 
-              {:on-consume  (consume-function [game item actor]
-                              (!+ actor :IN 1) (engine/message game actor "You feel enlightened!"))})
-    (proclaim "willpower potion" "base potion" 
-              {:on-consume  (consume-function [game item actor]
-                              (!+ actor :WP 1) (engine/message game actor "You feel more strong willed!"))})
-    (proclaim "charisma potion" "base potion" 
-              {:on-consume  (consume-function [game item actor]
-                              (!+ actor :CH 1) (engine/message game actor "You feel good about yourself!"))})
-    (proclaim "craft potion" "base potion" 
-              {:on-consume  (consume-function [game item actor]
-                              (!+ actor :CR 1) (engine/message game actor "You feel more creative!"))})
-
+    (proclaim-stat-potions)
     (proclaim "health boost potion" "base potion" 
-              {:on-consume (consume-function [game item actor]
+              {:level 0 
+               :on-consume (consume-function [game item actor]
                              (let [hps (:hps actor)
                                    new-hps (+ hps (Rand/r (:TG actor)))]
                                (! actor :hps new-hps)
                                (engine/message game actor
                                  (if (> new-hps hps) "You feel healthier." "You feel very healthy."))))})
+    (proclaim "cure poison potion" "base potion" 
+              {:level 0 
+               :on-consume (consume-function [game item actor]
+                             (if-let [ps (seq (filter :is-poison-effect (contents actor)))]
+                               (as-> game game 
+                                     (reduce (fn [game t] (remove-thing game t)) game ps)
+                                     (engine/message game actor "You feel much better!"))
+                               (engine/message game actor "Hmmm that was refreshing.")))})
     (proclaim "healing potion" "base potion" 
-              {:on-consume (potion-effect-function "healing")})
+              {:level 0
+               :on-consume (potion-effect-function "healing")})
     (proclaim "poison potion" "base potion" 
-              {:on-consume (potion-effect-function "poisoned")})
+              {:level 1
+               :on-consume (potion-effect-function "poisoned")})
     (proclaim "sickness potion" "base potion" 
-              {:on-consume (potion-effect-function "sick")})
+              {:level 5
+               :on-consume (potion-effect-function "sick")})
     (proclaim "shielding potion" "base potion" 
-              {:on-consume (potion-effect-function "sick")})
+              {:level 3
+               :on-consume (potion-effect-function "sick")})
     (describe-potions)))
 
 (defn define-ingredients [lib]
@@ -413,20 +451,71 @@
               {:char (char 0x2660)
                :food-value 10})
     (proclaim "magic mushroom" "base mushroom" 
-              {:char (char 0x2660)
+              {:level 1
+               :char (char 0x2660)
                :food-value 10
                :modifiers {:colour-fg 
                              [(modifier :colour-fg (colour (Rand/r 0x1000000)))]}})
     (proclaim "slime mould" "base food" 
-              {:food-value 100})))
+              {:level 3
+               :food-value 100})))
 
+;; ===================================================
+;; libary definitions - weapons & attacks
+
+(def WIELD-TYPES {:right-hand {:replaces [:two-hands]}
+                   :left-hand {:replaces [:two-hands]}
+                   :two-hands {:replaces [:right-hand :left-hand]}
+                   :head {:replaces [:two-hands]}
+                   :body {:replaces [:two-hands]}
+                   :legs {:replaces [:two-hands]}
+                   :full-body {:replaces [:body]}
+                   :cloak {} 
+                   :necklace {} 
+                   :right-ring {}
+                   :left-ring {}
+                   :feet {}})
+
+(def ATT_NORMAL {:name "normal attack" 
+                 :ASK 1.0 :DSK 0.75 :AST 0.75 
+                 :damage-type :normal})
+
+(def ATT_NORMAL {:name "poison bite" 
+                 :ASK 1.0 :DSK 0.75 :AST 0.75 
+                 :damage-type :normal
+                 :damage-effect "poisoned"})
+
+(def ATT_SWORD {:name "sword" 
+                :ASK 1.0 :DSK 1.0 :AST 1.0 
+                :damage-type :normal 
+                :wield-types [:right-hand :left-hand]})
+(def ATT_AXE {:name "axe" 
+              :ASK 0.8 :DSK 0.3 :AST 1.3 
+              :damage-type :normal 
+              :wield-types [:right-hand :left-hand]})
+(def ATT_MACE {:name "mace" 
+               :ASK 0.8 :DSK 0.3 :AST 1.3 
+               :damage-type :impact 
+               :wield-types [:right-hand :left-hand]})
+(def ATT_DAGGER {:name "dagger"
+                 :ASK 1.0 :DSK 0.7 :AST 0.8 
+                 :damage-type :normal 
+                 :wield-types [:right-hand :left-hand]})
+
+(defn define-weapons [lib]
+  (-> lib ))
+
+
+;; ===================================================
+;; main item library definitions
 (defn define-items [lib]
   (-> lib
     (define-base-item)
     (define-scenery)
     (define-ingredients)
     (define-food)
-    (define-potions)))
+    (define-potions)
+    (define-weapons)))
 
 ;; ===================================================
 ;; library definitions - creatures
@@ -438,6 +527,8 @@
                     :is-blocking true                             
                     :is-creature true
                     :is-hostile true
+                    :drop-chance 0.2
+                    :drop-type "[:is-item]"
                     :on-action engine/monster-action
                     :on-death (fn [game thing]
                                 (if-let [l (location thing)]
@@ -447,6 +538,7 @@
                                       game)
                                     (remove-thing game thing))
                                   game))
+                    :attack ATT_NORMAL
                     :aps 0
                     :z-order 75
                     :SK 5 :ST 5 :AG 5 :TG 5 :IN 5 :WP 5 :CH 5 :CR 5})
@@ -457,6 +549,7 @@
                     :colour-fg (colour 0xB0A090)})
     (proclaim "rat" "base rat" 
                    {:level-min 0})
+    
     (proclaim "base snake" "base creature" 
                    {:SK 5 :ST 3 :AG 8 :TG 4 :IN 2 :WP 6 :CH 4 :CR 1
                     :is-reptile true
@@ -488,6 +581,7 @@
                                       (! hero :is-corpse true)
                                       (assoc game :game-over true)))
                     :hps 15
+                    :attack ATT_NORMAL
                     :grammatical-person :second
                     :char \@
                     :colour-fg (colour 0xFFFFFF)
