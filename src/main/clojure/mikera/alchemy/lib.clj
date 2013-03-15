@@ -154,6 +154,14 @@
                :on-effect (fn [game effect target]
                             (engine/heal game target (:heal-amount effect)))}
               )
+    (proclaim "regenerating" "base periodic effect"
+              {:lifetime 20000
+               :period 500
+               :heal-amount 1
+               :parent-modifiers [(modifier :colour-bg (colour 0x006020))]
+               :on-effect (fn [game effect target]
+                            (engine/heal game target (:heal-amount effect)))}
+              )
     (proclaim "poisoned" "base periodic effect"
               {:lifetime 4000
                :period 400
@@ -441,9 +449,15 @@
     (proclaim "poison potion" "base potion" 
               {:level 1
                :on-consume (potion-effect-function "poisoned")})
+    (proclaim "confusion potion" "base potion" 
+              {:level 1
+               :on-consume (potion-effect-function "confused")})
     (proclaim "sickness potion" "base potion" 
               {:level 5
                :on-consume (potion-effect-function "sick")})
+    (proclaim "regeneration potion" "base potion" 
+              {:level 8
+               :on-consume (potion-effect-function "regenerating")})
     (proclaim "shielding potion" "base potion" 
               {:level 3
                :on-consume (potion-effect-function "sick")})
@@ -649,7 +663,8 @@
 (defn post-process-properties [v]
   (as-> v v
     (if (.startsWith (:name v) "base ") (assoc v :freq 0.0) v)
-    (assoc v :level (or (:level v) (:level-min v) 1))
+    (assoc v :level (or (:level v) 0))
+    (assoc v :level-min (or (:level-min v) (:level v) 1))
     (if (and (:hps v) (not (:hps-max v))) (assoc v :hps-max (:hps v)) v)))
 
 (defn post-process 

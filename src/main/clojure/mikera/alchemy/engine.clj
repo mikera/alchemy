@@ -260,6 +260,13 @@
                                  " here."))
         game))))
 
+(defn try-move-dir
+  [game thing dir]
+  (let [loc (location game thing)
+        dir (if (check (or (:confusion thing) 0) (? thing :IN)) (DIRECTIONS (Rand/r 8)) dir)
+        tloc (loc-add loc dir)]
+    (try-move game thing tloc)))
+
 ;; ===================================================
 ;; "AI"
 
@@ -270,7 +277,7 @@
           tloc (loc-add loc dir)]
       ;;(println (str (:name m) " considering direction " dir))
       (if (can-move game m tloc)
-        (try-move game m tloc)
+        (try-move-dir game m dir)
         nil))))
 
 (defn monster-action 
