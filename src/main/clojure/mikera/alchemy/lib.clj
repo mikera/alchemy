@@ -144,6 +144,14 @@
                :parent-modifiers [(modifier :colour-bg (colour 0x004040))]
                :on-effect (fn [game effect target]
                             (engine/heal game target (:heal-amount effect)))}
+              )
+    (proclaim "poisoned" "base periodic effect"
+              {:lifetime 4000
+               :period 300
+               :damage-amount 1
+               :parent-modifiers [(modifier :colour-bg (colour 0x008000))]
+               :on-effect (fn [game effect target]
+                            (engine/damage game target (:damage-amount effect) :poison))}
               )))
 
 (defn define-temp-effects [lib]
@@ -333,14 +341,31 @@
 
 (defn define-potions [lib]
   (-> lib
+    (proclaim "skill potion" "base potion" 
+              {:on-consume  (consume-function [game item actor]
+                              (!+ actor :SK 1) (engine/message game actor "You feel more skillful!"))})
     (proclaim "strengthening potion" "base potion" 
               {:on-consume  (consume-function [game item actor]
-                              (!+ actor :ST 1)
-                              (engine/message game actor "You feel stronger!"))})
+                              (!+ actor :ST 1) (engine/message game actor "You feel stronger!"))})
+    (proclaim "agility potion" "base potion" 
+              {:on-consume  (consume-function [game item actor]
+                              (!+ actor :AG 1) (engine/message game actor "You feel more agile!"))})
+    (proclaim "toughness potion" "base potion" 
+              {:on-consume  (consume-function [game item actor]
+                              (!+ actor :TG 1) (engine/message game actor "You feel really tough!"))})
+    (proclaim "intelligence potion" "base potion" 
+              {:on-consume  (consume-function [game item actor]
+                              (!+ actor :IN 1) (engine/message game actor "You feel enlightened!"))})
     (proclaim "willpower potion" "base potion" 
               {:on-consume  (consume-function [game item actor]
-                              (!+ actor :WP 1)
-                              (engine/message game actor "You feel more strong willed!"))})
+                              (!+ actor :WP 1) (engine/message game actor "You feel more strong willed!"))})
+    (proclaim "charisma potion" "base potion" 
+              {:on-consume  (consume-function [game item actor]
+                              (!+ actor :CH 1) (engine/message game actor "You feel good about yourself!"))})
+    (proclaim "craft potion" "base potion" 
+              {:on-consume  (consume-function [game item actor]
+                              (!+ actor :CR 1) (engine/message game actor "You feel more creative!"))})
+
     (proclaim "health boost potion" "base potion" 
               {:on-consume (consume-function [game item actor]
                              (let [hps (:hps actor)
@@ -350,6 +375,8 @@
                                  (if (> new-hps hps) "You feel healthier." "You feel very healthy."))))})
     (proclaim "healing potion" "base potion" 
               {:on-consume (potion-effect-function "healing")})
+    (proclaim "poison potion" "base potion" 
+              {:on-consume (potion-effect-function "poisoned")})
     (describe-potions)))
 
 (defn define-ingredients [lib]
@@ -421,6 +448,13 @@
                     :is-intelligent true
                     :is-hostile false
                     :on-action nil
+                    :on-death (fn [game hero]
+                                (as-> game game
+                                      (engine/message game hero "You have died....") 
+                                      (engine/message game hero "[Press R to restart]") 
+                                      (! hero :char \%)
+                                      (! hero :is-corpse true)
+                                      (assoc game :game-over true)))
                     :hps 15
                     :grammatical-person :second
                     :char \@

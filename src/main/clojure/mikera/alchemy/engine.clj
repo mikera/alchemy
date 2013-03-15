@@ -152,6 +152,9 @@
 ;; ======================================================
 ;; damage and healing
 
+(def DAMAGE-TYPES {:poison {}
+                   :normal {}})
+
 (defn heal [game target amount]
   (let [new-hps (min (hps-max target) 
                      (+ (hps target) amount))]
@@ -160,6 +163,26 @@
 
 (defn add-effect [game target effect]
   (add-thing game target (create game effect)))
+
+(defn transform [game target type]
+  (let [type (if (string? type) (create game type) type)]
+    (merge-thing game target type)))
+
+(defn die 
+  ([game target]
+    (if-let [death-fn (:on-death target)]
+      (death-fn game target)
+      (remove-thing game target))))
+
+(defn damage 
+  ([game target amount]
+    (damage game target amount :normal))
+  ([game target amount type]
+    (let [hps (:hps target)
+          dam amount]
+      (if (>= dam hps)
+        (die game target)
+        (! game target :hps (- hps amount))))))
 
 ;; ======================================================
 ;; actions

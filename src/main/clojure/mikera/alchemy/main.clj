@@ -24,6 +24,7 @@
 (def TEXT_COLOUR (colour 0xC0C0C0))
 
 (declare main-handler) 
+(declare restart) 
 
 (defn new-frame 
   (^JFrame []
@@ -194,7 +195,8 @@
    ["l" "Look around (movement keys to move cursor)"]
    ["m" "Show recent messages"]
    ["o" "Open / close a door, box or mechanism"]
-   ["q" "Quaff potion"]])
+   ["q" "Quaff potion"]
+  ])
 
 (defn show-commands [state]
   (let [^JConsole jc (:console state)
@@ -448,6 +450,31 @@
                        (fn [n] 
                          (main-handler state))))) 
 
+;;=========================================================
+;; special actions
+(defn do-confirm [state msg action]
+  (let [^JConsole jc (:console state)
+        game @(:game state)
+        w (.getColumns jc)
+	      h (.getRows jc)
+       CONFIRM-BG-COLOUR (colour 0x400000)
+       ]
+    (redraw-world state (engine/hero-location game))
+    (redraw-stats state)
+    (.fillArea jc \space TEXT_COLOUR CONFIRM-BG-COLOUR 0 0 w 1)
+    (.setForeground jc ^Color TEXT_COLOUR)
+    (.setBackground jc ^Color CONFIRM-BG-COLOUR)
+    (gui/draw jc 1 0 msg)
+    (reset! (:event-handler state)
+	          (fn [^String k]
+               (cond 
+	                (.contains "Yy" k)
+                    (action)
+                  (.contains "NnQ " k)
+                    (main-handler state)
+                  :else 
+                    :ignored)))))
+ 
 ;; ========================================================
 ;; Input state handler functions
 ;;
@@ -462,25 +489,34 @@
   "Create main keypress handler, for general game position"
   ([state]
     (fn [k]
-      (let [k (map-synonyms k) ]
+      (let [game @(:game state)
+            k (map-synonyms k) 
+            game-over? (:game-over game)]
         (cond
+          (or (= "R" k) (and game-over? (= "r" k))) 
+                    (if game-over?
+                      (restart state)
+                      (do-confirm state "Restart game: are you sure (y/n)" #(restart state)))
+          (= "?" k) (show-commands state)
+          (= "i" k) (show-inventory state)
+          (= "l" k) (do-look state)
+          (= "m" k) (show-messages state)
+          game-over? :handled  ;; stop here if game is over
+          
           (.contains "12346789" k)
             (do
-              (swap! (:game state) world/handle-move (or (move-dir-map k) (error "direction no recognised [" k "]")))
+              (swap! (:game state) world/handle-move (or (move-dir-map k) (error "direction not recognised [" k "]")))
               (redraw-screen state))
           (.contains ".5" k) 
             (do
               (swap! (:game state) world/handle-wait 100)
               (redraw-screen state))
-          (= "i" k) (show-inventory state)
           (= "d" k) (choose-drop state)
           (= "e" k) (choose-eat state)
-          (= "l" k) (do-look state)
           (= "q" k) (choose-quaff state)
-          (= "m" k) (show-messages state)
           (= "o" k) (choose-open state)
           (.contains ",p" k) (choose-pickup state)
-          (= "?" k) (show-commands state)
+          
           :else
 	          (do 
 	            (swap! (:game state) world/handle-command k)
@@ -523,6 +559,9 @@
 ;; =================================================================
 ;; Overall game control / main entry points
 
+(defn restart [state]
+  (reset! (:game state) (world/new-game))
+  (main-handler state))
 
 (defn new-state
   "Create a brand new game state."
@@ -531,7 +570,6 @@
           state {:game (atom game)
                  :console (new-console)
                  :frame (new-frame)
-                 :view-pos (engine/hero-location game) 
                  :event-handler (atom nil)}]
       state)))
 
