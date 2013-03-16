@@ -216,8 +216,13 @@
         arm (+ (? target :TG) (or (? target :ARM) 0))
         dam (* ast (Rand/nextDouble))
         dam (long* dam (/ dam (+ dam arm)))
-        dam-str (if (> dam 0) (str " for " dam " damage")
-                              (str " but " (text/verb-phrase {:person (text/get-person actor)} "cause") " no damage"))]
+        dam-str (cond 
+                  (>= dam (:hps target)) 
+                    (" and " (text/verb-phrase {:person (text/get-person actor)} "kill") " " (pronoun target))
+                  (> dam 0) 
+                    (str " for " dam " damage")
+                  :else 
+                    (str " but " (text/verb-phrase {:person (text/get-person actor)} "cause") " no damage"))]
     (as-> game game
       (message game actor (str (text/verb-phrase :the actor hit-verb :the target) dam-str "."))
       (message game target (str (text/verb-phrase :the actor hit-verb :the target) dam-str "!"))
