@@ -206,6 +206,22 @@
                                (contents thing))
         defs (concat (seq wielded-things) (list (:attack thing)) {:DSK 0})]
     (apply max (map #(or (:DSK %) 0)  defs))))
+
+(defn hit [game actor target weapon critical?]
+  (let [ast (* (? actor :ST) (? weapon :AST))
+        ast (if critical? (* ast 2) ast)
+        hit-verb "hit"
+        hit-verb (if critical? (str "skillfully " hit-verb) hit-verb)
+        dam-type (or (:damage-type weapon) :normal)
+        arm (+ (? target :TG) (or (? target :ARM) 0))
+        dam (* ast (Rand/nextDouble))
+        dam (long* dam (/ dam (+ dam arm)))
+        dam-str (if (> dam 0) (str " for " dam " damage")
+                              (str " but " (text/verb-phrase {:person (text/get-person actor)} "cause") " no damage"))]
+    (as-> game game
+      (message game actor (str (text/verb-phrase :the actor hit-verb :the target) dam-str "."))
+      (message game target (str (text/verb-phrase :the actor hit-verb :the target) dam-str "!"))
+      (damage game target dam dam-type))))
   
 (defn attack 
   ([game actor target]
@@ -220,7 +236,8 @@
   ([game actor target weapon]
     (let [ask (* (? actor :SK) (? weapon :ASK))
           dsk (* (? target :SK) (get-best-dsk game target))
-          dodge (* 0.25 (? target :AG) (+ 1 (or (? target :dodge) 0)))]
+          dodge (* 0.25 (? target :AG) (+ 1 (or (? target :dodge) 0)))
+          critical? (check ask (* (+ dsk dodge)))]
       (cond 
         (not (check ask dodge))
            (as-> game game
@@ -231,9 +248,7 @@
              (message game actor (str (text/verb-phrase :the target "block") " your attack."))
              (message game target (str (text/verb-phrase :the target "block") " the attack of " (the-name game actor) "."))) 
         :else 
-          (as-> game game
-            (message game actor (str (text/verb-phrase :the actor "hit" :the target) "."))
-            (message game target (str (text/verb-phrase :the actor "hit" :the target) "!")))))))
+           (hit game actor target weapon critical?)))))
 
 ;; ======================================================
 ;; actions
