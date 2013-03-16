@@ -171,9 +171,11 @@
 
 (defn die 
   ([game target]
-    (if-let [death-fn (:on-death target)]
-      (death-fn game target)
-      (remove-thing game target))))
+    (if (not (:is-immortal target))
+      (if-let [death-fn (:on-death target)]
+        (death-fn game target)
+        (remove-thing game target))
+      game)))
 
 (defn damage 
   ([game target amount]

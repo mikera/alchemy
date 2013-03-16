@@ -4,6 +4,7 @@
   (:use mikera.orculje.util)
   (:use mikera.orculje.text)
   (:require [mikera.alchemy.engine :as engine])
+  (:require [mikera.alchemy.config :as config])
   (:require [clojure.math.combinatorics :as combo])
   (:import [mikera.util Rand]))
 
@@ -643,6 +644,8 @@
                     :aps 0
                     :z-order 75
                     :SK 5 :ST 5 :AG 5 :TG 5 :IN 5 :WP 5 :CH 5 :CR 5})
+    
+    ;; rats
     (proclaim "base rat" "base creature" 
                    {:SK 4 :ST 3 :AG 6 :TG 2 :IN 1 :WP 5 :CH 2 :CR 2
                     :attack ATT_BITE
@@ -651,7 +654,19 @@
                     :colour-fg (colour 0xB0A090)})
     (proclaim "rat" "base rat" 
                    {:level 0})
+    (proclaim "sewer rat" "rat" 
+                   {:level 3
+                    :colour-fg (colour 0x902010)
+                    :attack (merge ATT_BITE {:damage-effect "poisoned" :damage-effect-chance 0.2})})
+    (proclaim "giant rat" "rat" 
+                   {:SK 8 :ST 8 :AG 6 :TG 8
+                    :level 4
+                    :char \r
+                    :hps 10
+                    :colour-fg (colour 0xC0C0C0)
+                    })
     
+    ;; snakes
     (proclaim "base snake" "base creature" 
                    {:SK 5 :ST 3 :AG 8 :TG 4 :IN 2 :WP 6 :CH 4 :CR 1
                     :is-reptile true
@@ -666,8 +681,22 @@
                    {:SK 9 :ST 6 :AG 10 :TG 7 :IN 4 :WP 9 :CH 8 :CR 3
                     :char \c
                     :hps 15
-                    :level-min 6
+                    :level 6
                     :attack ATT_POISON_BITE
+                    :colour-fg (colour 0xD0A060)})
+    (proclaim "king cobra" "base snake"
+                   {:SK 16 :ST 10 :AG 20 :TG 17 :IN 4 :WP 19 :CH 8 :CR 3
+                    :char \C
+                    :hps 25
+                    :level 10
+                    :attack (merge ATT_POISON_BITE {:damage-effect "poisoned!"})
+                    :colour-fg (colour 0xD0A060)})
+    (proclaim "wyrm" "base snake"
+                   {:SK 26 :ST 15 :AG 20 :TG 37 :IN 14 :WP 29 :CH 12 :CR 8
+                    :char \W
+                    :hps 50
+                    :level 15
+                    :attack (merge ATT_POISON_BITE {:damage-effect "poisoned!!"})
                     :colour-fg (colour 0xD0A060)})))
 
 (defn define-hero [lib]
@@ -676,6 +705,7 @@
                    {:is-hero true
                     :is-intelligent true
                     :is-hostile false
+                    :is-immortal (if config/DEBUG true false)
                     :on-action nil
                     :on-death (fn [game hero]
                                 (as-> game game
