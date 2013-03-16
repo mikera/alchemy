@@ -218,7 +218,7 @@
         dam (long* dam (/ dam (+ dam arm)))
         dam-str (cond 
                   (>= dam (:hps target)) 
-                    (" and " (text/verb-phrase {:person (text/get-person actor)} "kill") " " (pronoun target))
+                    (str " and " (text/verb-phrase {:person (text/get-person actor)} "kill") " " (text/pronoun target))
                   (> dam 0) 
                     (str " for " dam " damage")
                   :else 
@@ -241,8 +241,9 @@
   ([game actor target weapon]
     (let [ask (* (? actor :SK) (? weapon :ASK))
           dsk (* (? target :SK) (get-best-dsk game target))
-          dodge (* 0.25 (? target :AG) (+ 1 (or (? target :dodge) 0)))
-          critical? (check ask (* (+ dsk dodge)))]
+          target-ag (? target :AG)
+          dodge (* 0.25 target-ag (+ 1 (or (? target :dodge) 0)))
+          critical? (check ask (* 2.0 (+ dsk dodge target-ag)))]
       (cond 
         (not (check ask dodge))
            (as-> game game
