@@ -4,6 +4,7 @@
   (:use mikera.orculje.core)
   (:use mikera.cljutils.error)
   (:require [mikera.orculje.engine :as en])
+  (:require [mikera.alchemy.config :as config])
   (:require [mikera.orculje.mapmaker :as mm])
   (:import [mikera.engine BitGrid PersistentTreeGrid])
   (:import [mikera.util Rand])
@@ -71,7 +72,7 @@
   (or (:is-hero a) (:is-hero b)))
 
 (defn current-level [game]
-  (max 1 (min 10 (.z (hero-location game)))))
+  (max 1 (min 10 (- (.z (hero-location game))))))
 
 
 ;; =======================================================
@@ -130,7 +131,7 @@
           (when (< d RAY_LEN)
             (let [px (int (Math/round (+ hx (* dx d))))
                   py (int (Math/round (+ hy (* dy d))))
-                  view-ok? (not (get-pred game (loc px py hz) :is-view-blocking))]
+                  view-ok? (or config/SEE_THROUGH_WALLS (not (get-pred game (loc px py hz) :is-view-blocking)))]
               (when view-ok?
                 (.set bg px py hz true)
                 (recur (+ d RAY_INC))))))))
@@ -395,13 +396,15 @@
   "Returns true if a move or attack to a target location is possible."
   ([game m tloc]
   (let [bl (get-blocking game tloc)]
-    (if (or (not bl) (is-hostile m bl))
+    (if (or (not bl) 
+            (is-hostile m bl))
       true
       nil))))
 
 (defn try-move
   [game thing loc]
-  (if-let [target (get-blocking game loc)]
+  (if-let [target (and (not (and (:is-hero thing) config/WALK_THROUGH_WALLS (:is-tile (get-blocking game loc))))  
+                       (get-blocking game loc))]
     (try-bump game thing target)
     (as-> game game
       (use-aps game thing 100)    

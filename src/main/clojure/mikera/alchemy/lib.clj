@@ -92,10 +92,19 @@
                :char (char 0x00B7)
                :z-order 0})
     (proclaim "floor" "base floor" 
-              {:colour-fg (colour 0x404040)})
+              {:colour-fg (colour 0x606060)})
+    (proclaim "cave floor" "base floor" 
+              {:colour-fg (colour 0x604020)})
     (proclaim "wall" "base wall" 
               {:colour-fg (colour 0xC08040)
-               :colour-bg (colour 0x804000)})))
+               :colour-bg (colour 0x804000)})
+    (proclaim "rock wall" "base wall" 
+              {:colour-fg (colour 0xF0F0F0)
+               :colour-bg (colour 0x607080)})
+    (proclaim "gold wall" "base wall" 
+              {:colour-fg (colour 0xFFFFFF)
+               :colour-bg (colour 0xC0C000)}))
+  )
 
 ;; ===================================================
 ;; Library definitions - effects
