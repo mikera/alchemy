@@ -438,12 +438,16 @@
 (defn choose-pickup [state]
   (let [game @(:game state)
         inv (vec (filter :is-item (get-things game (engine/hero-location game))))]
-    (item-select-handler state "Pick up an item:" 
+    (if (== 1 (count inv))
+      (do 
+        (swap! (:game state) world/handle-pickup (inv 0))
+        (main-handler state))
+      (item-select-handler state "Pick up an item:" 
                       (vec (map (partial engine/base-name game) inv))
                       0
                       (fn [n] 
                         (swap! (:game state) world/handle-pickup (inv n))
-                        (main-handler state))))) 
+                        (main-handler state)))))) 
 
  (defn do-look [state]
    (let [game @(:game state)]
@@ -543,7 +547,11 @@
     (fn []
       (let [hand @(:event-handler state)]
         (or
-          (hand k)
+          (try (hand k)
+            (catch Throwable t
+              (do 
+                (swap! (:game state) assoc :error t)
+                (throw t))))
           (println (str "Key pressed but no event handler ready: " k)))))))
 
 (defn setup-input 

@@ -695,7 +695,7 @@
                     :colour-fg (colour 0xFFFFFF)})
     
     ;; golems
-    (proclaim "immortal golem" "base creature" 
+    (proclaim "base golem" "base creature" 
                    {:SK 15 :ST 23 :AG 8 :TG 30 :IN 0 :WP 16 :CH 0 :CR 0
                     :attack ATT_NORMAL
                     :is-living false
@@ -722,25 +722,25 @@
     (proclaim "grass snake" "base snake"
                    {})
     (proclaim "cobra" "base snake"
-                   {:SK 9 :ST 6 :AG 10 :TG 7 :IN 4 :WP 9 :CH 8 :CR 3
+                   {:SK 4 :ST 3 :AG 10 :TG 7 :IN 4 :WP 9 :CH 8 :CR 3
                     :char \c
                     :hps 15
                     :level 6
-                    :attack ATT_POISON_BITE
+                    :attack (merge ATT_POISON_BITE {:damage-effect "poisoned" :damage-effect-chance 40})
                     :colour-fg (colour 0xD0A060)})
     (proclaim "king cobra" "base snake"
-                   {:SK 16 :ST 10 :AG 20 :TG 17 :IN 4 :WP 19 :CH 8 :CR 3
+                   {:SK 6 :ST 5 :AG 20 :TG 17 :IN 4 :WP 19 :CH 8 :CR 3
                     :char \C
                     :hps 25
                     :level 10
-                    :attack (merge ATT_POISON_BITE {:damage-effect "poisoned!"})
+                    :attack (merge ATT_POISON_BITE {:damage-effect "poisoned!" :damage-effect-chance 40})
                     :colour-fg (colour 0xD0A060)})
     (proclaim "wyrm" "base snake"
                    {:SK 26 :ST 15 :AG 20 :TG 37 :IN 14 :WP 29 :CH 12 :CR 8
                     :char \W
                     :hps 50
                     :level 15
-                    :attack (merge ATT_POISON_BITE {:damage-effect "poisoned!!"})
+                    :attack (merge ATT_POISON_BITE {:damage-effect "poisoned!!" :damage-effect-chance 40})
                     :colour-fg (colour 0xD0A060)})))
 
 (defn define-hero [lib]
@@ -788,10 +788,11 @@
 
 (defn create
   "Creates a new thing using the library of the specified game"
-  ([game ^String name]
+  ([game name]
     (create game name (or (:max-level name) 0)))
-  ([game ^String name level]
-    (let [obj (:objects (:lib game))]
+  ([game name level]
+    (let [^String name (if (string? name) name (:name name))
+          obj (:objects (:lib game))]
       (if-let [props (obj name)]
         (if-let [on-create (:on-create props)]
           (thing (on-create props))
@@ -851,7 +852,8 @@
         lib 
     (define-objects lib)
     (assoc lib :objects (post-process (:objects lib)))
-    (assoc lib :objects (assign-potion-ingredients (:objects lib)))))
+    (assoc lib :objects (assign-potion-ingredients (:objects lib)))
+    (or lib (error "Lib creation failed: null result!?!"))))
 
 (defn setup 
   "Sets up the object library for a given game"

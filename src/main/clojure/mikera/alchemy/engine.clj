@@ -190,6 +190,14 @@
       (as-> game game
             (! game target :hps new-hps)))))
 
+;; ======================================================
+;; summoning
+
+(defn summon [game loc-or-summoner thing]
+  (let [new-thing (create game thing)
+        loc (location loc-or-summoner)]
+    )) 
+
 
 ;; ======================================================
 ;; combat
