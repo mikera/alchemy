@@ -156,11 +156,6 @@
 (def DAMAGE-TYPES {:poison {}
                    :normal {}})
 
-(defn heal [game target amount]
-  (let [new-hps (min (hps-max target) 
-                     (+ (hps target) amount))]
-    (as-> game game
-          (! game target :hps new-hps))))
 
 (defn add-effect [game target effect]
   (add-thing game target (create game effect)))
@@ -186,6 +181,15 @@
       (if (>= dam hps)
         (die game target)
         (! game target :hps (- hps amount))))))
+
+(defn heal [game target amount]
+  (if (:is-undead target)
+    (damage game target amount)
+    (let [new-hps (min (hps-max target) 
+                     (+ (hps target) amount))]
+      (as-> game game
+            (! game target :hps new-hps)))))
+
 
 ;; ======================================================
 ;; combat

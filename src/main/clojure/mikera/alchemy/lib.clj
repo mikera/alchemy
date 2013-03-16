@@ -666,6 +666,50 @@
                     :colour-fg (colour 0xC0C0C0)
                     })
     
+    ;; undead
+    (proclaim "base undead" "base creature" 
+                   {:is-living false
+                    :is-undead false})
+    (proclaim "zombie" "base undead" 
+                   {:level 2
+                    :SK 3 :ST 10 :AG 2 :TG 5 :IN 0 :WP 0 :CH 0 :CR 0
+                    :hps 10
+                    :colour-fg (colour 0x808080)})
+    (proclaim "skeleton" "base undead" 
+                   {:level 5
+                    :SK 10 :ST 10 :AG 6 :TG 10 :IN 0 :WP 0 :CH 0 :CR 0
+                    :hps 10
+                    :char \s
+                    :colour-fg (colour 0xE0E0C0)})
+    (proclaim "skeleton warrior" "base undead" 
+                   {:level 8
+                    :SK 15 :ST 15 :AG 10 :TG 15 :IN 0 :WP 0 :CH 0 :CR 0
+                    :hps 20
+                    :char \s
+                    :colour-fg (colour 0xFFFFFF)})
+    (proclaim "skeleton champion" "base undead" 
+                   {:level 12
+                    :SK 25 :ST 25 :AG 20 :TG 25 :IN 0 :WP 0 :CH 0 :CR 0
+                    :hps 40
+                    :char \S
+                    :colour-fg (colour 0xFFFFFF)})
+    
+    ;; golems
+    (proclaim "immortal golem" "base creature" 
+                   {:SK 15 :ST 23 :AG 8 :TG 30 :IN 0 :WP 16 :CH 0 :CR 0
+                    :attack ATT_NORMAL
+                    :is-living false
+                    :hps 30
+                    :char \G
+                    :colour-fg (colour 0xC0C0C0)})
+    (proclaim "golem" "base golem" 
+                   {})
+    (proclaim "immortal golem" "base golem" 
+                   {:char \G
+                    :is-immortal true
+                    :level 20
+                    :colour-fg (colour 0xFFFFFF)})
+    
     ;; snakes
     (proclaim "base snake" "base creature" 
                    {:SK 5 :ST 3 :AG 8 :TG 4 :IN 2 :WP 6 :CH 4 :CR 1
