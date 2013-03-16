@@ -312,15 +312,37 @@
                                    :is-view-blocking false} })))
 
 
-
 (defn define-apparatus [lib]
   (-> lib
     (proclaim "base apparatus" "base scenery" 
               {:is-apparatus true
                :on-use (fn [game app actor]
                          (engine/message game actor (str "You don't know how to use " (the-name game app) ".")))})
-    (proclaim "alchemy bench" "base apparatus" 
-              {:char (char 0x046C)})))
+    (proclaim "alchemy workbench" "base apparatus" 
+              {:char (char 0x046C)
+               :colour-fg (colour 0xFFFF00)})
+    (proclaim "analysis lab" "base apparatus" 
+              {:char (char 0x0468)
+               :colour-fg (colour 0x00FFFF)})))
+
+(defn define-clouds [lib]
+  (-> lib
+    (proclaim "base cloud" "base scenery" 
+              {:char \*
+               :is-cloud true
+               :is-blocking false
+               :on-action (fn [game effect]
+                            (let [elapsed (:aps effect)
+                                  average-lifetime (:lifetime effect)]
+                              ;; (println "effect time elapsed = " elapsed " remainging lifetime = " lifetime)
+                              (if (> (Rand/po elapsed average-lifetime) 0)
+                                (remove-thing game effect)
+                                (update-thing game (-> effect
+                                                     (assoc :colour-fg (Rand/pick (:cloud-colours effect)))))))) 
+               :lifetime 500
+               :cloud-colours [(colour 0x808080) (colour 0xA0A0A0) (colour 0xC0C0C0)]
+               :z-order 70})
+    (proclaim "dust cloud" "base cloud" {:is-view-blocking true})))
 
 (defn define-stairs [lib]
   (-> lib
@@ -623,14 +645,10 @@
 
 (defn define-creatures [lib]
   (-> lib
-    (proclaim "base creature" "base thing" 
+    (proclaim "base being" "base thing" 
                    {:is-mobile true
+                    :is-being true
                     :is-blocking true                             
-                    :is-creature true
-                    :is-hostile true
-                    :drop-chance 1.0
-                    :drop-type "[:is-item]"
-                    :on-action engine/monster-action
                     :on-death (fn [game thing]
                                 (if-let [l (location game thing)]
                                   (as-> game game
@@ -644,6 +662,12 @@
                     :aps 0
                     :z-order 75
                     :SK 5 :ST 5 :AG 5 :TG 5 :IN 5 :WP 5 :CH 5 :CR 5})
+    (proclaim "base creature" "base being"
+              {:is-creature true
+               :is-hostile true
+               :drop-chance 1.0
+               :drop-type "[:is-item]"
+               :on-action engine/monster-action})
     
     ;; rats
     (proclaim "base rat" "base creature" 
@@ -674,6 +698,7 @@
                    {:level 2
                     :SK 3 :ST 10 :AG 2 :TG 5 :IN 0 :WP 0 :CH 0 :CR 0
                     :hps 10
+                    :char \z
                     :colour-fg (colour 0x808080)})
     (proclaim "skeleton" "base undead" 
                    {:level 5
@@ -745,8 +770,9 @@
 
 (defn define-hero [lib]
   (-> lib
-    (proclaim "you" "base creature" 
+    (proclaim "you" "base being" 
                    {:is-hero true
+                    :is-creature false
                     :is-intelligent true
                     :is-hostile false
                     :is-immortal (if config/DEBUG true false)
@@ -821,6 +847,8 @@
 (defn post-process-properties [v]
   (as-> v v
     (if (.startsWith (:name v) "base ") (assoc v :freq 0.0) v)
+    (if (number? (:colour-fg v)) (assoc v :colour-fg (colour (:colour-fg v))) v)
+    (if (number? (:colour-bg v)) (assoc v :colour-bg (colour (:colour-bg v))) v)
     (assoc v :level (or (:level v) 0))
     (assoc v :level-min (or (:level-min v) (:level v) 1))
     (if (and (:hps v) (not (:hps-max v))) (assoc v :hps-max (:hps v)) v)))

@@ -4,6 +4,7 @@
   (:use mikera.orculje.core)
   (:use mikera.cljutils.error)
   (:require [mikera.orculje.engine :as en])
+  (:require [mikera.orculje.mapmaker :as mm])
   (:import [mikera.engine BitGrid PersistentTreeGrid])
   (:import [mikera.util Rand])
   (:require [mikera.orculje.text :as text]))
@@ -68,6 +69,9 @@
 
 (defn is-hostile [a b]
   (or (:is-hero a) (:is-hero b)))
+
+(defn current-level [game]
+  (max 1 (min 10 (.z (hero-location game)))))
 
 
 ;; =======================================================
@@ -135,9 +139,9 @@
           (assoc game :visibility bg)
           (assoc game :discovered-world (extend-discovery bg (:discovered-world game) (:world game))))))
 
-(defn is-square-visible? [^mikera.orculje.engine.Game game 
-                          ^mikera.orculje.engine.Location loc]
-  (let [^BitGrid viz (:visibility game)]
+(defn is-square-visible? [^mikera.orculje.engine.Game game loc-or-thing                       ]
+  (let [^BitGrid viz (:visibility game)
+        ^mikera.orculje.engine.Location loc (if (loc? loc-or-thing) loc-or-thing (location game loc-or-thing))]
     (.get viz (.x loc) (.y loc) (.z loc))))
 
 ;; ======================================================
@@ -150,6 +154,15 @@
 (defn is-identified? [game thing]
   (or (:is-identified thing)
       (:is-identified ((:objects (:lib game)) (:name thing)))))
+
+(defn identify-recipe [game thing]
+  (let [name (:name thing)]
+    (update-in game [:lib :objects name :is-recipe-known] (fn [old] true))))
+
+(defn is-recipe-known? [game thing]
+  (or (:is-recipe-known thing)
+      (:is-recipe-known ((:objects (:lib game)) (:name thing)))))
+
 
 ;; ======================================================
 ;; action handling
@@ -203,9 +216,14 @@
 ;; summoning
 
 (defn summon [game loc-or-summoner thing]
-  (let [new-thing (create game thing)
-        loc (location loc-or-summoner)]
-    )) 
+  (let [new-thing (create game thing (current-level game))
+        sloc (location game loc-or-summoner)]
+    (or 
+      (mm/place-thing game 
+                      (loc-add sloc (loc -1 -1 0))
+                      (loc-add sloc (loc 1 1 0))
+                      new-thing)
+      (message game loc-or-summoner (str "Can't summon " (a-name game new-thing)))))) 
 
 
 ;; ======================================================
@@ -298,7 +316,7 @@
     (as-> game game
           (message game actor (str (the-name game missile) " hits " (the-name game target)))
           (message game target (str (the-name game missile) " hits " (the-name game target)))
-          (add-thing game (missile-land-location game actor target) missile))))
+          (add-thing game (missile-land-location game actor (location game target)) missile))))
 
 (defn default-throw [game missile actor target-loc]
   (let [missile-hit-fn (or (:on-missile-hit missile) default-missile-hit)
@@ -365,7 +383,7 @@
   (cond
     (:is-tile target)
       (message game thing (str (text/verb-phrase game :the thing "run") " into a wall."))
-    (and (:is-creature target) (is-hostile thing target))
+    (and (:is-being target) (is-hostile thing target))
       (try-attack game thing target)
     (and (:is-intelligent thing) (:is-door target))
       (try-open game thing target)

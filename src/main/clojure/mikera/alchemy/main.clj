@@ -349,6 +349,7 @@
 (defn map-select-handler [state msg loc action]
   (let [^JConsole jc (:console state)
         game @(:game state)
+        loc (location game loc)
         w (.getColumns jc)
 	      h (.getRows jc)
         [x y z] loc 
@@ -453,7 +454,13 @@
   (let [game @(:game state)]
      (map-select-handler state 
                        "Select a target:" 
-                       (engine/hero-location game) 
+                       (if-let [tt (find-nearest-thing game (fn [t] (and 
+                                                                      (:is-creature t)
+                                                                      (not (:is-hero t))
+                                                                      (engine/is-square-visible? game t)))
+                                                       (engine/hero game) 15)] 
+                         tt
+                         (engine/hero-location game)) 
                        (fn [tloc] 
                          (swap! (:game state) world/handle-throw missile tloc)
                          (main-handler state)))))
@@ -565,14 +572,15 @@
   "Builds an input action handler for the specified state object"
   ([state k]
     (fn []
-      (let [hand @(:event-handler state)]
-        (or
-          (try (hand k)
-            (catch Throwable t
-              (do 
-                (swap! (:game state) assoc :error t)
-                (throw t))))
-          (println (str "Key pressed but no event handler ready: " k)))))))
+      (locking state
+        (let [hand @(:event-handler state)]
+          (or
+            (try (hand k)
+              (catch Throwable t
+                (do 
+                  (swap! (:game state) assoc :error t)
+                  (throw t))))
+            (println (str "Key pressed but no event handler ready: " k))))))))
 
 (defn setup-input 
   ([^JComponent comp state]
@@ -630,3 +638,11 @@
     (def s (new-state))
     (let [^JFrame frame (launch s)]
       (.setDefaultCloseOperation frame JFrame/EXIT_ON_CLOSE))))
+
+(defmacro go [& body]
+  `(let [game# @(:game ~'s)
+         ~'hero (engine/hero game#)]
+     (reset! (:game ~'s) 
+       (as-> game# ~'game
+             ~@body))
+     (main-handler ~'s)))
