@@ -278,6 +278,7 @@
                                    :colour-fg (colour 0x000000) 
                                    :colour-bg (colour 0xC07020)
                                    :is-blocking true
+                                   :z-order 60
                                    :is-view-blocking true} 
                :open-properties {:char (char 0x2551)
                                  :is-open true
@@ -285,6 +286,7 @@
                                  :colour-bg (colour 0x000000) 
                                  :colour-fg (colour 0xC07020)
                                  :is-blocking false
+                                 :z-order 1
                                  :is-view-blocking false
                                  }
                :on-open (fn [game door actor]
@@ -625,7 +627,7 @@
                     :is-blocking true                             
                     :is-creature true
                     :is-hostile true
-                    :drop-chance 0.2
+                    :drop-chance 1.0
                     :drop-type "[:is-item]"
                     :on-action engine/monster-action
                     :on-death (fn [game thing]
@@ -713,6 +715,8 @@
 (defn create
   "Creates a new thing using the library of the specified game"
   ([game ^String name]
+    (create game name (or (:max-level name) 0)))
+  ([game ^String name level]
     (let [obj (:objects (:lib game))]
       (if-let [props (obj name)]
         (if-let [on-create (:on-create props)]
@@ -720,7 +724,7 @@
           (thing props))
         (cond 
           (.startsWith name "[")
-            (create-type game (keyword (.substring name 2 (dec (count name)))))
+            (create-type game (keyword (.substring name 2 (dec (count name)))) level)
           :else
             (error "Can't find thing in library [" name "]" ))))))
 

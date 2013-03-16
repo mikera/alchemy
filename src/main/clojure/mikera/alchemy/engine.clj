@@ -218,15 +218,20 @@
         dam (long* dam (/ dam (+ dam arm)))
         dam-str (cond 
                   (>= dam (:hps target)) 
-                    (str " and " (text/verb-phrase {:person (text/get-person actor)} "kill") " " (text/pronoun target))
+                    (str " and " (text/verb-phrase game {:person (text/get-person actor)} "kill") " " (text/pronoun target))
                   (> dam 0) 
                     (str " for " dam " damage")
                   :else 
-                    (str " but " (text/verb-phrase {:person (text/get-person actor)} "cause") " no damage"))]
+                    (str " but " (text/verb-phrase game {:person (text/get-person actor)} "cause") " no damage"))]
     (as-> game game
-      (message game actor (str (text/verb-phrase :the actor hit-verb :the target) dam-str "."))
-      (message game target (str (text/verb-phrase :the actor hit-verb :the target) dam-str "!"))
-      (damage game target dam dam-type))))
+      (message game actor (str (text/verb-phrase game :the actor hit-verb :the target) dam-str "."))
+      (message game target (str (text/verb-phrase game :the actor hit-verb :the target) dam-str "!"))
+      (damage game target dam dam-type)
+      (if-let [eff (? weapon :damage-effect)]
+        (if (and (> dam 0) (< (Rand/nextDouble) (or (? weapon :damage-effect-chance) 1.0)))
+          (add-effect game target eff)
+          game)
+        game))))
   
 (defn attack 
   ([game actor target]
@@ -239,20 +244,22 @@
         (!+ game actor :aps (long* (/ (* -100.0 att-cost) speed)))
         atts)))
   ([game actor target weapon]
-    (let [ask (* (? actor :SK) (? weapon :ASK))
-          dsk (* (? target :SK) (get-best-dsk game target))
+    (let [actor-sk (? actor :SK)
+          ask (* actor-sk (? weapon :ASK))
+          target-sk (? target :SK) 
+          dsk (* target-sk (get-best-dsk game target))
           target-ag (? target :AG)
           dodge (* 0.25 target-ag (+ 1 (or (? target :dodge) 0)))
-          critical? (check ask (* 2.0 (+ dsk dodge target-ag)))]
+          critical? (check actor-sk (* 2.0 (+ target-sk target-ag)))]
       (cond 
         (not (check ask dodge))
            (as-> game game
-             (message game actor (str (text/verb-phrase :the actor "miss" :the target) "."))
-             (message game target (str (text/verb-phrase :the actor "miss" :the target) "."))) 
+             (message game actor (str (text/verb-phrase game :the actor "miss" :the target) "."))
+             (message game target (str (text/verb-phrase game :the actor "miss" :the target) "."))) 
         (not (check ask dodge))
            (as-> game game
-             (message game actor (str (text/verb-phrase :the target "block") " your attack."))
-             (message game target (str (text/verb-phrase :the target "block") " the attack of " (the-name game actor) "."))) 
+             (message game actor (str (text/verb-phrase game :the target "block") " your attack."))
+             (message game target (str (text/verb-phrase game :the target "block") " the attack of " (the-name game actor) "."))) 
         :else 
            (hit game actor target weapon critical?)))))
 
@@ -265,7 +272,7 @@
 (defn try-open [game actor door]
   (as-> game game
     (if (? door :is-locked)
-      (message game actor (str (text/verb-phrase :the door) " is locked."))
+      (message game actor (str (text/verb-phrase game :the door) " is locked."))
       ((:on-open door) game door actor))    ))
 
 (defn try-consume [game actor item]
@@ -287,20 +294,20 @@
 
 (defn try-drop [game actor item]
   (as-> game game
-    (message game actor (str (text/verb-phrase :the actor "drop" :the item) "."))
+    (message game actor (str (text/verb-phrase game :the actor "drop" :the item) "."))
     (move-thing game item (:location actor))
     (!+ game actor :aps -100)))
 
 (defn try-pickup [game actor item]
   (as-> game game
-    (message game actor (str (text/verb-phrase :the actor "take" :the item) "."))
+    (message game actor (str (text/verb-phrase game :the actor "take" :the item) "."))
     (move-thing game item (:id actor))
     (!+ game actor :aps -100)))
 
 (defn try-bump [game thing target]
   (cond
     (:is-tile target)
-      (message game thing (str (text/verb-phrase :the thing "run") " into a wall."))
+      (message game thing (str (text/verb-phrase game :the thing "run") " into a wall."))
     (and (:is-creature target) (is-hostile thing target))
       (try-attack game thing target)
     (and (:is-intelligent thing) (:is-door target))
