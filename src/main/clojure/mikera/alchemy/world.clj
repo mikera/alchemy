@@ -109,6 +109,18 @@
       (engine/try-drop game h item)
       (end-turn game))))
 
+(defn handle-throw 
+  "Handles an item throw / missile fire"
+  [game item tloc]
+  (let [hero (engine/hero game)]
+    (as-> game game
+      (engine/clear-messages game)
+      (if (engine/is-square-visible? game tloc)
+        (engine/try-throw game hero tloc item)
+        (engine/message game "You can't see that location..."))
+      (end-turn game))))
+
+
 (defn handle-consume 
   "Handles consuming an item (eating or quaffing)"
   [game item]

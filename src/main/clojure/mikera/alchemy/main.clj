@@ -449,6 +449,25 @@
                         (swap! (:game state) world/handle-pickup (inv n))
                         (main-handler state)))))) 
 
+(defn choose-throw-target [state missile]
+  (let [game @(:game state)]
+     (map-select-handler state 
+                       "Select a target:" 
+                       (engine/hero-location game) 
+                       (fn [tloc] 
+                         (swap! (:game state) world/handle-throw missile tloc)
+                         (main-handler state)))))
+
+(defn choose-throw [state]
+  (let [game @(:game state)
+        hero (engine/hero game)
+        inv (vec (filter :is-item (contents hero)))]
+    (item-select-handler state "Select an item to throw:" 
+                      (vec (map (partial engine/base-name game) inv))
+                      0
+                      (fn [n] 
+                        (choose-throw-target state (inv n)))))) 
+
  (defn do-look [state]
    (let [game @(:game state)]
      (map-select-handler state 
@@ -523,6 +542,7 @@
           (= "q" k) (choose-quaff state)
           (= "o" k) (choose-open state)
           (.contains ",p" k) (choose-pickup state)
+          (= "t" k) (choose-throw state)
           
           :else
 	          (do 

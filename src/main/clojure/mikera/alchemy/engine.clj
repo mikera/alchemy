@@ -69,6 +69,7 @@
 (defn is-hostile [a b]
   (or (:is-hero a) (:is-hero b)))
 
+
 ;; =======================================================
 ;; item creation
 ;; (these are set later by lib)
@@ -151,6 +152,14 @@
       (:is-identified ((:objects (:lib game)) (:name thing)))))
 
 ;; ======================================================
+;; action handling
+
+(defn use-aps 
+  [game thing aps-used]
+  (let [aps-delta (long* (/ (* -100.0 aps-used) (or (? game thing :speed) 100)))]
+    (!+ game thing :aps aps-delta)))
+
+;; ======================================================
 ;; damage and healing
 
 (def DAMAGE-TYPES {:poison {}
@@ -223,12 +232,12 @@
 
 (defn hit [game actor target weapon critical?]
   (let [ast (* (? actor :ST) (? weapon :AST))
-        ast (if critical? (* ast 2) ast)
         hit-verb "hit"
         hit-verb (if critical? (str "skillfully " hit-verb) hit-verb)
         dam-type (or (:damage-type weapon) :normal)
-        arm (+ (? target :TG) (or (? target :ARM) 0))
+        arm (+ (* 0.5 (or (? target :TG) 0)) (or (? target :ARM) 0))
         dam (* ast (Rand/nextDouble))
+        dam (if critical? (+ dam (* ast (Rand/nextDouble))) dam) 
         dam (long* dam (/ dam (+ dam arm)))
         dam-str (cond 
                   (>= dam (:hps target)) 
@@ -277,11 +286,41 @@
         :else 
            (hit game actor target weapon critical?)))))
 
+;; missile attack
+
+(defn missile-land-location [game actor tloc]
+  (if (let [bl (get-blocking game tloc)] (and bl (:is-tile bl)))
+      (location-towards tloc (location game actor))
+      tloc))
+
+(defn default-missile-hit [game missile actor target]
+  (let []
+    (as-> game game
+          (message game actor (str (the-name game missile) " hits " (the-name game target)))
+          (message game target (str (the-name game missile) " hits " (the-name game target)))
+          (add-thing game (missile-land-location game actor target) missile))))
+
+(defn default-throw [game missile actor target-loc]
+  (let [missile-hit-fn (or (:on-missile-hit missile) default-missile-hit)
+        target (get-blocking game target-loc)]
+    (as-> game game
+          (if (and target (not (:is-tile target))) 
+            (missile-hit-fn game missile actor target)
+            (add-thing game (missile-land-location game actor target-loc) missile)))))
+
+(defn do-throw [game actor target-or-loc missile]
+  (let [tloc (location game target-or-loc)
+        throw-fn (or (:on-thrown missile) default-throw)] 
+    (as-> game game
+      (remove-thing game missile)
+      (throw-fn game missile actor tloc)
+      (use-aps game actor 100))))
+
 ;; ======================================================
 ;; actions
 
 (defn wait [game actor]
-  (!+ game actor :aps -100))
+  (use-aps game actor 100))
 
 (defn try-open [game actor door]
   (as-> game game
@@ -294,7 +333,7 @@
     (if-let [con-fn (:on-consume item)]
       (con-fn game item actor)
       (message game actor (str "You don't know how to consume " (the-name game item))))    
-    (!+ game actor :aps -100)))
+    (use-aps game actor 100)))
 
 (defn try-use [game actor thing]
   (as-> game game
@@ -306,17 +345,21 @@
   (as-> game game
     (attack game thing target)))
 
+(defn try-throw [game thing target-or-loc missile]
+  (as-> game game
+    (do-throw game thing target-or-loc missile)))
+
 (defn try-drop [game actor item]
   (as-> game game
     (message game actor (str (text/verb-phrase game :the actor "drop" :the item) "."))
     (move-thing game item (:location actor))
-    (!+ game actor :aps -100)))
+    (use-aps game actor 100)))
 
 (defn try-pickup [game actor item]
   (as-> game game
     (message game actor (str (text/verb-phrase game :the actor "take" :the item) "."))
     (move-thing game item (:id actor))
-    (!+ game actor :aps -100)))
+    (use-aps game actor 100)))
 
 (defn try-bump [game thing target]
   (cond
@@ -343,7 +386,7 @@
   (if-let [target (get-blocking game loc)]
     (try-bump game thing target)
     (as-> game game
-      (!+ game thing :aps -100)    
+      (use-aps game thing 100)    
       (move-thing game thing loc)
       (if-let [items (and (:is-hero thing) (seq (filter :is-item (get-things game loc))))]
         (message game thing (str "There is " 
