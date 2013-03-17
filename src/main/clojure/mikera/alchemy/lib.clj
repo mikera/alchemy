@@ -8,6 +8,8 @@
   (:require [clojure.math.combinatorics :as combo])
   (:import [mikera.util Rand]))
 
+(declare create)
+
 ;; ===================================================
 ;; library constants
 
@@ -300,25 +302,37 @@
                                  :is-view-blocking false
                                  }
                :on-open (fn [game door actor]
-                          (update-thing game 
+                          (let [open? (? door :is-open)]
+                            (as-> game game
+                                  (engine/message game actor (str "You " (if open? "close" "open") " " (engine/the-name game door)))
+                                  (update-thing game 
                                         (merge door
-                                               (if (? door :is-open)
+                                               (if open?
                                                  (? door :closed-properties)
-                                                 (? door :open-properties))))) 
+                                                 (? door :open-properties))))))) 
                :on-create (fn [door]
                             (merge door ((if (:is-open door) :open-properties :closed-properties) door)))
                :z-order 70})
     (proclaim "door" "base door" 
               {})
-    (proclaim "grille" "base door" 
-              {:is-locked true
+    (proclaim "gate" "base door" 
+              {:is-locked false
+               :colour-fg (colour 0x909090) 
                :closed-properties {:char \#                            
                                    :is-open false
-                                   :is-locked true
+                                   :is-locked false
                                    :colour-fg (colour 0x909090) 
                                    :colour-bg (colour 0x000000)
                                    :is-blocking true
-                                   :is-view-blocking false} })))
+                                   :is-view-blocking false}
+               :open-properties {:char (char 0x2551)
+                                 :is-open true
+                                 :is-locked false
+                                 :colour-bg (colour 0x000000) 
+                                 :colour-fg (colour 0x909090)
+                                 :is-blocking false
+                                 :z-order 1
+                                 :is-view-blocking false}})))
 
 
 (defn define-apparatus [lib]
@@ -366,7 +380,9 @@
                :char \<})
     (proclaim "down staircase" "base stairs" 
               {:move-dir (loc 0 0 1)
-               :char \>})))
+               :char \>})
+    (proclaim "exit staircase" "up staircase" 
+              {:move-dir nil})))
 
 (defn define-scenery [lib]
   (-> lib
@@ -419,6 +435,8 @@
                :on-splash (consume-function [game item target]
                             (engine/message game target (str "You are splashed with " (the-name game item) "!"))
                             ((:on-consume item) game item target))
+               :on-missile-hit (fn [game item actor target]
+                                 ((:on-splash item) game item target))
                :colour-fg (colour 0x0090B0) 
                :z-order 25})
     (proclaim "base food" "base ingredient" 
@@ -641,6 +659,22 @@
   (-> lib ))
 
 
+(defn define-artifacts [lib]
+  (-> lib
+    (proclaim "base artifact" "base item" 
+              {:is-artifact true
+               :z-order 45
+               :freq 0.0  ;; no random generation
+               :is-immortal true})
+    (proclaim "The Philosopher's Stone" "base artifact" 
+              {:level 1
+               :proper-name "The Philosopher's Stone"
+               :char (char 0x047B)
+               :colour-fg 0xFF00FF
+               :modifiers {:colour-fg 
+                             [(modifier :colour-fg (colour (Rand/r 0xFFFFFF)))]}})))
+
+
 ;; ===================================================
 ;; main item library definitions
 (defn define-items [lib]
@@ -650,7 +684,8 @@
     (define-ingredients)
     (define-food)
     (define-potions)
-    (define-weapons)))
+    (define-weapons)
+    (define-artifacts)))
 
 ;; ===================================================
 ;; library definitions - creatures
@@ -769,28 +804,32 @@
                    {:SK 4 :ST 3 :AG 10 :TG 7 :IN 4 :WP 9 :CH 8 :CR 3
                     :char \c
                     :hps 15
-                    :level 6
+                    :level 5
                     :attack (merge ATT_POISON_BITE {:damage-effect "poisoned" :damage-effect-chance 40})
                     :colour-fg (colour 0xD0A060)})
     (proclaim "king cobra" "base snake"
                    {:SK 6 :ST 5 :AG 20 :TG 17 :IN 4 :WP 19 :CH 8 :CR 3
                     :char \C
                     :hps 25
-                    :level 10
+                    :level 7
                     :attack (merge ATT_POISON_BITE {:damage-effect "poisoned!" :damage-effect-chance 40})
                     :colour-fg (colour 0xD0A060)})
     (proclaim "wyrm" "base snake"
                    {:SK 26 :ST 15 :AG 20 :TG 37 :IN 14 :WP 29 :CH 12 :CR 8
                     :char \W
+                    :freq 1.0
                     :hps 50
-                    :level 15
+                    :level 10
                     :attack (merge ATT_POISON_BITE {:damage-effect "poisoned!!" :damage-effect-chance 40})
                     :colour-fg (colour 0xD0A060)})))
+
+(defn rhs "Random hero stat" [] (+ 5 (Rand/r 8)))
 
 (defn define-hero [lib]
   (-> lib
     (proclaim "you" "base being" 
                    {:is-hero true
+                    :SK (rhs) :ST (rhs) :AG (rhs) :TG (rhs) :IN (rhs) :WP (rhs) :CH (rhs) :CR (rhs)
                     :is-creature false
                     :is-intelligent true
                     :is-hostile false
@@ -829,7 +868,8 @@
                 freq-o (if valid? (double (:freq o)) 0.0)
                 keeper? (< (* (Rand/nextDouble) (+ cumfreq freq-o)) freq-o)]
             (recur (if keeper? o v) (+ cumfreq freq-o) (next objs)))
-          (thing v))))))
+          (if v
+            (create game (:name v) level)))))))
 
 (defn create
   "Creates a new thing using the library of the specified game"

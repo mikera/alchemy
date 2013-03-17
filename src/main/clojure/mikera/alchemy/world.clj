@@ -35,7 +35,8 @@
     (assoc game :discovered-world (PersistentTreeGrid.))
     
     ;; add the hero
-    (add-thing game (loc 0 0 0) (lib/create game "you")) 
+    (let [start-location (or (:start-location game) (loc 0 0 0))]
+      (add-thing game start-location (lib/create game "you"))) 
     (merge game {:turn 0              
                  :hero-id (:last-added-id game)})
     (reduce 

@@ -416,12 +416,32 @@
                                  " here."))
         game))))
 
+(defn try-exit [game hero]
+  (if (some #(= "The Philosopher's Stone" (:name %)) (contents hero))
+    (as-> game game 
+      (assoc game :game-over true)
+      (message game hero "Victory! You have escaped with The Philosopher's Stone")
+      (message game hero "Truly you are the greatest!"))
+    (as-> game game
+      (message game hero "The Philosopher's Stone is not yet in your posession.")
+      (message game hero "You shall not leave without it!"))))
+
 (defn try-move-dir
   [game thing dir]
   (let [loc (location game thing)
         dir (if (check (or (:confusion thing) 0) (? thing :IN)) (DIRECTIONS (Rand/r 8)) dir)
-        tloc (loc-add loc dir)]
-    (try-move game thing tloc)))
+        tloc (loc-add loc dir)
+        dz (dir 2)]
+    (if (not (== 0 (dir 2)))
+      (if-let [stairs (find-nearest-thing game :is-stairs thing 0)]
+        (cond 
+          (= dir (:move-dir stairs)) (try-move game thing tloc)
+          (and (:is-hero thing) (= "exit staircase" (:name stairs))) (try-exit game thing)
+          :else (message game thing (str "Cannot go " (if (> dz 0) "up" "down") " here")))
+        (if config/WALK_THROUGH_LEVELS
+          (try-move game thing tloc)
+          (message game thing "There are no stairs here!")))
+      (try-move game thing tloc))))
 
 ;; ===================================================
 ;; "AI"

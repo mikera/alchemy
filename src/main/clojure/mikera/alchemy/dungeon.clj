@@ -1,7 +1,7 @@
 (ns mikera.alchemy.dungeon
   (:use mikera.orculje.core)
   (:use mikera.orculje.util)
-  (:use mikera.orculje.util)
+  (:use mikera.cljutils.error)
   (:import [mikera.util Rand])
   (:require [mikera.cljutils.find :as find])
   (:require [mikera.alchemy.lib :as lib])
@@ -58,6 +58,16 @@
       game
       (range (Rand/d 10)))))
 
+(defn decorate-store-room [game room type]
+  (let [lmin (:lmin room)
+        lmax (:lmax room)]
+    (reduce 
+      (fn [game _]
+        (and-as-> game game
+          (maybe-place-thing game lmin lmax (lib/create game type))))
+      game
+      (range (Rand/d 12)))))
+
 (defn decorate-normal-room [game room]
   (let [lmin (:lmin room)
         lmax (:lmax room)]
@@ -73,6 +83,8 @@
         (decorate-lair game room)
       (Rand/chance 0.2)
         (decorate-normal-room game room)
+      (Rand/chance 0.2)
+        (decorate-store-room game room (Rand/pick ["[:is-food]" "[:is-potion]" "[:is-ingredient]" "[:is-herb]"]))
       :else
         ;; an empty room
       game)
@@ -180,7 +192,7 @@
               new-con2 (if (== split-dir 0)
                         (loc (+ x1 split-point) (+ y1 (Rand/r h)) z)
                         (loc (+ x1 (Rand/r w)) (+ y1 split-point) z))
-              new-cons (if (and (Rand/chance 0.4) (> 2 (loc-dist-manhattan new-con new-con2)))
+              new-cons (if (and (Rand/chance 0.4) (< 1 (loc-dist-manhattan new-con new-con2)))
                          [new-con new-con2]
                          [new-con])] 
           (and-as-> game game
@@ -209,15 +221,57 @@
                   game
                   (range z1 (inc z2))))))
 
+
+
+(defn connect-levels 
+  ([game lmin lmax]
+    (let [[x1 y1 z1] lmin
+          [x2 y2 z2] lmax]
+      (and-as-> game game
+                (reduce 
+                  (fn [game i ] 
+                    (or-loop [1000]
+                      (let [x (Rand/range x1 x2)
+                            y (Rand/range y1 y2)]
+                        (and game (connect-levels game (loc x y i) (loc x y (inc i)) :link)))))
+                  game
+                  (range z1 z2)))))
+  ([game lmin lmax _]
+    (and-as-> game game
+              (if (and game (not (get-blocking game lmin)) (not (seq (get-things game lmin))))
+                (add-thing game lmin (lib/create game "up staircase")))
+              (if (and game (not (get-blocking game lmax)) (not (seq (get-things game lmax))))
+                (add-thing game lmax (lib/create game "down staircase"))))))
+
+(defn place-exit-staircase [game lmin lmax]
+  (let [[x1 y1 z1] lmin
+        [x2 y2 z2] lmax]
+    (as-> game game
+          (or 
+            (or-loop [1000] (mm/place-thing game (loc x1 y1 z2) lmax (lib/create game "exit staircase")))
+            (error "Can't place exit staircase!!"))
+          (assoc game :start-location (location game (:last-added-id game))))))
+
+(defn place-philosophers-stone [game lmin lmax]
+  (let [[x1 y1 z1] lmin
+        [x2 y2 z2] lmax]
+    (as-> game game
+          (or 
+            (or-loop [1000] (mm/place-thing game lmin (loc x2 y2 z1) (lib/create game "The Philosopher's Stone")))
+            (error "Can't place philosopher's stone!!")))))
+
 (defn generate-dungeon 
   "Attempts to generate dungeon. May return nil on failure" 
   [game]
-   (let [lmin (loc -30 -30 -10)
-        lmax (loc 30 30 0)]
-    (and-as-> game game
+   (let [lmin (loc -30 -30 -10) 
+         lmax (loc 30 30 0)]
+     (and-as-> game game
               (mm/fill-block game (loc-dec lmin) (loc-inc lmax) (lib/create game "rock wall"))
               (generate-region game lmin lmax )
-              (decorate-rooms game))))
+              (place-exit-staircase game lmin lmax)
+              (place-philosophers-stone game lmin lmax)
+              (decorate-rooms game)
+              (connect-levels game lmin lmax))))
 
 (defn generate 
    "Main dungeon generation algorithm"

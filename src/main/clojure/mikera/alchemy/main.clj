@@ -198,6 +198,7 @@
    ["m" "Show recent messages"]
    ["o" "Open / close a door, box or mechanism"]
    ["q" "Quaff potion"]
+   ["t" "Throw something"]
   ])
 
 (defn show-commands [state]
@@ -300,8 +301,8 @@
    "7" (loc -1 1 0)
    "8" (loc 0 1 0)
    "9" (loc 1 1 0)
-   "<" (loc 0 0 -1)
-   ">" (loc 0 0 1)})
+   "<" (loc 0 0 1)
+   ">" (loc 0 0 -1)})
 
 (defn direction-select-handler [state msg action]
   (let [^JConsole jc (:console state)
