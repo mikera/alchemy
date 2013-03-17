@@ -230,8 +230,12 @@
                    :normal {}})
 
 
-(defn add-effect [game target effect]
-  (add-thing game target (create game effect)))
+(defn add-effect 
+  "Apples an effect to a target. Effect may be a string or a function"
+  ([game target effect]
+    (if (fn? effect)
+      (effect game target)
+      (add-thing game target (create game effect)))))
 
 (defn transform [game target type]
   (let [type (if (string? type) (create game type) type)]
