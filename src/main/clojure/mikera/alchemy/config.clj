@@ -2,8 +2,8 @@
 
 ;; true false
 
-(def DEBUG true)
-(def ALL_IDENTIFIED true)
-(def SEE_THROUGH_WALLS true)
-(def WALK_THROUGH_WALLS true)
-(def WALK_THROUGH_LEVELS true)
+(def DEBUG false)
+(def ALL_IDENTIFIED false)
+(def SEE_THROUGH_WALLS false)
+(def WALK_THROUGH_WALLS false)
+(def WALK_THROUGH_LEVELS false)
