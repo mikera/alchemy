@@ -99,7 +99,7 @@
                        (loc (inc x1) (inc y1) z)
                        (loc (dec x2) (dec y2) z)
                        (lib/create game (Rand/pick ["murky pool" "shallow pool" "deep pool" "magma pool"]))))))
-
+;
 (defn decorate-room [game room]
   (and-as-> game game 
     (cond
@@ -109,7 +109,7 @@
         (decorate-normal-room game room)
       (Rand/chance 0.2)
         (decorate-store-room game room (Rand/pick ["[:is-food]" "[:is-potion]" "[:is-ingredient]" "[:is-herb]"]))
-      (Rand/chance 0.05)
+      (Rand/chance 0.1)
         (decorate-lab game room)
       (Rand/chance 0.1)
         (decorate-designer-room game room)
@@ -167,12 +167,37 @@
       (reduce (fn [game con]
         (mm/fill-block game con con (lib/create game "cave floor"))) game connections))))
 
+(defn generate-grid-corridor [game
+                            ^mikera.orculje.engine.Location lmin 
+                            ^mikera.orculje.engine.Location lmax]
+  (let [[x1 y1 z] lmin [x2 y2 z] lmax
+        lp (if (Rand/chance 0.5) (loc x1 y2 z) (loc x2 y1 z))]
+    (as-> game game
+      (mm/fill-block game lmin lp (lib/create game "floor"))
+      (mm/fill-block game lp lmax (lib/create game "floor")))))
+
+(defn generate-grid [game ^mikera.orculje.engine.Location lmin 
+                          ^mikera.orculje.engine.Location lmax
+                          connections]
+  (let [[x1 y1 z] lmin [x2 y2 z] lmax
+        cloc (rand-loc lmin lmax)]
+    (and-as-> game game
+      (mm/fill-block game lmin lmax (lib/create game (Rand/pick ["rock wall" "wall"])))
+      (reduce
+        (fn [game c] 
+          (generate-grid-corridor game (loc-bound lmin lmax c) cloc))
+        game
+        connections)
+      (reduce (fn [game con]
+        (mm/fill-block game con con (lib/create game "floor"))) game connections))))
+
 (defn generate-block [game ^mikera.orculje.engine.Location lmin 
                           ^mikera.orculje.engine.Location lmax
                           connections]
   (or-loop [10] 
     (cond
-      (Rand/chance 0.4) (generate-caves game lmin lmax connections)
+      (Rand/chance 0.3) (generate-caves game lmin lmax connections)
+      (Rand/chance 0.1) (generate-grid game lmin lmax connections)
       :else (generate-room game lmin lmax connections))))
 
 (defn find-split [split-dir lmin lmax connections]

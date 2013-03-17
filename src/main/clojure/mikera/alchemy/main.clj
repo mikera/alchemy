@@ -6,6 +6,7 @@
   (:require [mikera.orculje.gui :as gui])
   (:require [mikera.orculje.text :as text])  
   (:require [mikera.alchemy.world :as world])
+  (:require [mikera.alchemy.lib :as lib])
   (:require [mikera.alchemy.engine :as engine])
   (:import [javax.swing JFrame JComponent])
   (:import [java.awt.event KeyEvent])
@@ -136,7 +137,7 @@
     (if more-msgs? (gui/draw jc 1 (+ sy (dec mh)) "[press m to see more messages]"))))
 
 (def STAT_BACKGROUND_COLOUR (colour 0x301020))
-(def STAT_SPACE "  ")
+(def STAT_SPACE " ")
 
 (defn redraw-stats [state]
   (let [^JConsole jc (:console state)
@@ -165,7 +166,9 @@
                                     (str "IN:" (? game hero :IN) STAT_SPACE)
                                     (str "WP:" (? game hero :WP) STAT_SPACE)
                                     (str "CH:" (? game hero :CH) STAT_SPACE)
-                                    (str "CR:" (? game hero :CR) STAT_SPACE)))
+                                    (str "CR:" (? game hero :CR) STAT_SPACE)
+                                    (str "Spd:" (? game hero :speed) STAT_SPACE)
+                                    (str "Lv:" (- ((location game hero) 2)) STAT_SPACE)))
       (.setForeground jc ^Color TEXT_COLOUR)
       (let [effs (filter :is-effect (contents hero))
             eff-string (apply str (distinct (map #(str (text/capitalise (:name %)) "  ") effs)))]
@@ -394,6 +397,18 @@
 ;; ================================================================
 ;; inventory actions
 
+(defn choose-alchemy [state]
+  (let [game @(:game state)
+        hero (engine/hero game)
+        inv (vec (lib/all-library-things game 
+                   (fn [p] (and (:is-potion p) (:is-identified p) (:is-recipe-known p)))))]
+    (item-select-handler state "Create a potion:" 
+                      (vec (map (partial engine/base-name game) inv))
+                      0
+                      (fn [n] 
+                        (swap! (:game state) world/handle-alchemy (inv n))
+                        (main-handler state))))) 
+
 (defn choose-drop [state]
   (let [game @(:game state)
         hero (engine/hero game)
@@ -545,6 +560,7 @@
             (do
               (swap! (:game state) world/handle-wait 100)
               (redraw-screen state))
+          (= "a" k) (choose-alchemy state)
           (= "d" k) (choose-drop state)
           (= "e" k) (choose-eat state)
           (= "q" k) (choose-quaff state)

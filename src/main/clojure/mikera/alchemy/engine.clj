@@ -74,6 +74,24 @@
 (defn current-level [game]
   (max 1 (min 10 (- (.z (hero-location game))))))
 
+(defn has-item? [game hero thing-or-name]
+  (let [tname (if (string? thing-or-name) thing-or-name
+                (:name thing-or-name))]
+    (some #(= tname (:name %)) (contents hero))))
+
+(defn remove-item [game hero thing-or-name]
+  (let [tname (if (string? thing-or-name) thing-or-name
+                (:name thing-or-name))
+        it (find/find-first #(= tname (:name %)) (contents hero))]
+    (if it
+      (remove-thing game it)
+      game)))
+
+(defn remove-items [game hero things-or-names]
+  (reduce 
+    (fn [game it] (remove-item game hero it))
+    game
+    things-or-names))
 
 ;; =======================================================
 ;; item creation
@@ -346,7 +364,35 @@
       (use-aps game actor 100))))
 
 ;; ======================================================
+;; alchemy
+
+(defn has-ingredients? [game hero potion]
+  (let [ingreds (or (:ingredients potion) (error "potion has no ingredient list!"))]    
+    (every? #(has-item? game hero %) ingreds)))
+
+
+;; ======================================================
 ;; actions
+
+
+(defn try-alchemy [game actor item]
+  (as-> game game
+    (message game actor (str (a-name game item) " requires ingredients: "))
+    (message game actor (str "  " (text/and-string (map #(:name (create game %)) (:ingredients item)))))
+    (if (has-ingredients? game actor item)
+      (if (find-nearest-thing game #(= "alchemy workbench" (:name %)) actor 1)
+        (let [potion (create game item)]
+          (reduce
+            (fn [game _] 
+              (as-> game game 
+                  (message game actor (str "You create " (a-name game potion) "."))
+                  (remove-items game actor (:ingredients item))
+                  (add-thing game actor potion)))
+            game
+            (range (inc (Rand/po (? actor :CR) 20)))))
+        (message game actor "You need an alchemy workbench to create potions."))  
+      (message game actor "Alas, you lack the necessary ingredients"))   
+    (use-aps game actor 100)))
 
 (defn wait [game actor]
   (use-aps game actor 100))
@@ -426,7 +472,7 @@
         game))))
 
 (defn try-exit [game hero]
-  (if (some #(= "The Philosopher's Stone" (:name %)) (contents hero))
+  (if (has-item? game hero "The Philosopher's Stone")
     (as-> game game 
       (assoc game :game-over true)
       (message game hero "Victory! You have escaped with The Philosopher's Stone")

@@ -136,6 +136,16 @@
       (engine/try-consume game h item)
       (end-turn game))))
 
+
+(defn handle-alchemy 
+  "Handles creating a potion"
+  [game item]
+  (let [h (engine/hero game)]
+    (as-> game game
+      (engine/clear-messages game)
+      (engine/try-alchemy game h item)
+      (end-turn game))))
+
 (defn handle-open 
   "Handles opening a door / lever"
   [game dir]

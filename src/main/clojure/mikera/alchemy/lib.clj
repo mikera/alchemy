@@ -4,6 +4,7 @@
   (:use mikera.orculje.util)
   (:use mikera.orculje.text)
   (:require [mikera.alchemy.engine :as engine])
+  (:require [mikera.cljutils.find :as find])
   (:require [mikera.alchemy.config :as config])
   (:require [clojure.math.combinatorics :as combo])
   (:import [mikera.util Rand]))
@@ -162,11 +163,13 @@
                                   (if (> i 0)
                                     (recur (dec i) ((:on-effect effect) game effect target))
                                     game))
-                                (if (<= lifetime 0)
-                                  (remove-thing game effect)
-                                  (update-thing game (-> effect
-                                                       (assoc :aps 0)
-                                                       (assoc :lifetime lifetime))))))) 
+                                (cond 
+                                  (<= lifetime 0) (remove-thing game effect)
+                                  (get-thing game effect)
+                                    (update-thing game (-> effect
+                                                         (assoc :aps 0)
+                                                         (assoc :lifetime lifetime)))
+                                  :else game)))) 
                :on-effect (fn [game effect target]
                             game)
                :aps 0     
@@ -361,7 +364,9 @@
                          (engine/message game actor (str "You don't know how to use " (the-name game app) ".")))})
     (proclaim "alchemy workbench" "base apparatus" 
               {:char (char 0x046C)
-               :colour-fg (colour 0xFFFF00)})
+               :colour-fg (colour 0xFFFF00)
+               :on-use (fn [game app actor]
+                         (engine/message game actor (str "Press [a] to use " (the-name game app) ".")))})
     (proclaim "analysis lab" "base apparatus" 
               {:char (char 0x0468)
                :colour-fg (colour 0x00FFFF)
@@ -450,6 +455,7 @@
                :z-order 20})
     (proclaim "base potion" "base item" 
               {:is-potion true
+               :is-recipe-known true
                :char (char \!)
                :on-consume  (consume-function [game item actor]
                               (engine/message game actor "Yuck. This potions tastes terrible.")
@@ -874,9 +880,12 @@
 ;; ==============================================
 ;; library accessors
 
-(defn all-library-things [game]
-  "Returns a list of all things possible in the game library"
-  (vals (:objects (:lib game))))
+(defn all-library-things 
+   "Returns a list of all things possible in the game library"
+  ([game]
+    (vals (:objects (:lib game))))
+  ([game pred]
+    (find/eager-filter pred (vals (:objects (:lib game))))))
 
 (defn create-type 
   ([game pred]
@@ -945,7 +954,8 @@
   "Assigns 1-3 ingredients to every potion"
   ([objects]
     (let [obs (vals objects)
-          ingreds (vec (map :name (filter :is-ingredient (vals objects))))
+          ingreds (vec (map :name (filter #(and (> (:freq %) 0) (:is-ingredient %)) 
+                                          (vals objects))))
           icount (count ingreds)
           potions (filter :is-potion (vals objects))
           rand-ingredients (fn []
