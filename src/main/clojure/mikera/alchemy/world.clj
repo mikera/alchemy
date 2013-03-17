@@ -4,6 +4,7 @@
   (:require [mikera.cljutils.find :as find]) 
   (:require [mikera.alchemy.dungeon :as dungeon]) 
   (:import [mikera.engine PersistentTreeGrid]) 
+  (:import [mikera.util Rand]) 
   (:use mikera.orculje.core))
 
 (set! *warn-on-reflection* true)
@@ -38,9 +39,13 @@
     (merge game {:turn 0              
                  :hero-id (:last-added-id game)})
     (reduce 
-      (fn [game _] (add-thing game (engine/hero game) (lib/create game "[:is-potion]")))
+      (fn [game _] 
+        (as-> game game
+          (add-thing game (engine/hero game) (lib/create game "[:is-ingredient]"))
+          (add-thing game (engine/hero game) (lib/create game "[:is-potion]"))
+          (engine/identify game (:last-added-id game))))
       game
-      (range 100)) 
+      (range (Rand/d 5))) 
     
     ;; testing state
     ;; (add-thing game (engine/hero game) (lib/create game "invincibility")) 

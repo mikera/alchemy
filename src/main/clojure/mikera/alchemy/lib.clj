@@ -472,11 +472,13 @@
     (let [statname (:name (MAIN_STATS stat))]
       (-> lib
         (proclaim (str "gain " statname " potion") "base potion" 
-              {:level (+ 5 (Rand/d 15))
+              {:level (+ 3 (Rand/d 7))
+               :freq 0.3
                :on-consume  (consume-function [game item actor]
-                              (!+ actor stat 1) (engine/message game actor (str "You feel you have gained in " statname "!")))})
+                              (!+ actor stat (Rand/d 3)) (engine/message game actor (str "You feel you have gained in " statname "!")))})
         (proclaim (str statname " boost potion") "base potion" 
-              {:level (Rand/d 15)
+              {:level (Rand/d 10)
+               :freq 0.3
                :on-consume (potion-effect-function (str statname " boost"))})))))
 
 (defn define-potions [lib]
@@ -491,7 +493,7 @@
                                (engine/message game actor
                                  (if (> new-hps hps) "You feel healthier." "You feel very healthy."))))})
     (proclaim "cure poison potion" "base potion" 
-              {:level 0 
+              {:level 2 
                :on-consume (consume-function [game item actor]
                              (if-let [ps (seq (filter :is-poison-effect (contents actor)))]
                                (as-> game game 
@@ -522,7 +524,7 @@
               {:level 8
                :on-consume (potion-effect-function "regenerating")})
     (proclaim "weakness potion" "base potion" 
-              {:level 0
+              {:level 3
                :on-consume (potion-effect-function "weakened")})
     (proclaim "confusion potion" "base potion" 
               {:level 0
@@ -537,13 +539,13 @@
               {:level (Rand/d 10) 
                :on-consume (potion-effect-function "hasted")})
     (proclaim "extreme speed potion" "base potion" 
-              {:level (Rand/d 20) 
+              {:level (Rand/d 10) 
                :on-consume (potion-effect-function "hasted!")})
     (proclaim "greater confusion potion" "base potion" 
               {:level (Rand/d 10) 
                :on-consume (potion-effect-function "confused!")})
     (proclaim "extreme confusion potion" "base potion" 
-              {:level (Rand/d 20) 
+              {:level (Rand/d 10) 
                :on-consume (potion-effect-function "confused!!")})
     (proclaim "shielding potion" "base potion" 
               {:level 3
@@ -553,7 +555,8 @@
 (defn define-herbs [lib]
   (-> lib
     (proclaim "base herb" "base ingredient" 
-              {:char (char 0x1D67)
+              {:level 1
+               :char (char 0x1D67)
                :colour-fg (colour 0x00B030) 
                :unidentified-name "strange herb" 
                :food-value 1})
@@ -692,8 +695,8 @@
                     :colour-fg (colour 0x902010)
                     :attack (merge ATT_BITE {:damage-effect "poisoned" :damage-effect-chance 0.2})})
     (proclaim "giant rat" "rat" 
-                   {:SK 8 :ST 8 :AG 6 :TG 8
-                    :level 4
+                   {:level 4
+                    :SK 8 :ST 8 :AG 6 :TG 8 
                     :char \r
                     :hps 10
                     :colour-fg (colour 0xC0C0C0)
@@ -710,19 +713,26 @@
                     :char \z
                     :colour-fg (colour 0x808080)})
     (proclaim "skeleton" "base undead" 
-                   {:level 5
+                   {:level 4
                     :SK 10 :ST 10 :AG 6 :TG 10 :IN 0 :WP 0 :CH 0 :CR 0
                     :hps 10
                     :char \s
                     :colour-fg (colour 0xE0E0C0)})
     (proclaim "skeleton warrior" "base undead" 
-                   {:level 8
+                   {:level 5
                     :SK 15 :ST 15 :AG 10 :TG 15 :IN 0 :WP 0 :CH 0 :CR 0
                     :hps 20
                     :char \s
                     :colour-fg (colour 0xFFFFFF)})
+    (proclaim "wight" "base undead" 
+                   {:level 6
+                    :SK 6 :ST 6 :AG 8 :TG 10 :IN 0 :WP 0 :CH 0 :CR 0
+                    :hps 12
+                    :char \W
+                    :colour-fg (colour 0xE0E0C0)
+                    :attack (merge ATT_NORMAL {:damage-effect "weakened" :damage-effect-chance 0.3})})
     (proclaim "skeleton champion" "base undead" 
-                   {:level 12
+                   {:level 7
                     :SK 25 :ST 25 :AG 20 :TG 25 :IN 0 :WP 0 :CH 0 :CR 0
                     :hps 40
                     :char \S
@@ -737,11 +747,11 @@
                     :char \G
                     :colour-fg (colour 0xC0C0C0)})
     (proclaim "golem" "base golem" 
-                   {})
+                   {:level 8})
     (proclaim "immortal golem" "base golem" 
                    {:char \G
                     :is-immortal true
-                    :level 20
+                    :level 10
                     :colour-fg (colour 0xFFFFFF)})
     
     ;; snakes
@@ -816,7 +826,7 @@
         (if objs
           (let [o (first objs)
                 valid? (and (pred o) (>= level (or (:level-min o) 0)))
-                freq-o (if (pred o) (double (:freq o)) 0.0)
+                freq-o (if valid? (double (:freq o)) 0.0)
                 keeper? (< (* (Rand/nextDouble) (+ cumfreq freq-o)) freq-o)]
             (recur (if keeper? o v) (+ cumfreq freq-o) (next objs)))
           (thing v))))))
@@ -824,7 +834,7 @@
 (defn create
   "Creates a new thing using the library of the specified game"
   ([game name]
-    (create game name (or (:max-level name) 0)))
+    (create game name (or (:max-level game) 0)))
   ([game name level]
     (let [^String name (if (string? name) name (:name name))
           obj (:objects (:lib game))]

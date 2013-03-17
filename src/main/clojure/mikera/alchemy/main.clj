@@ -536,7 +536,7 @@
           (= "m" k) (show-messages state)
           game-over? :handled  ;; stop here if game is over
           
-          (.contains "12346789" k)
+          (.contains "12346789<>" k)
             (do
               (swap! (:game state) world/handle-move (or (move-dir-map k) (error "direction not recognised [" k "]")))
               (redraw-screen state))

@@ -35,6 +35,54 @@
     (maybe-place-thing game (loc -3 -3 0) (loc 11 3 0) (lib/create game "[:is-food]"))
     (maybe-place-thing game (loc 4 0 0) (loc 4 0 0) (lib/create game "door"))))
 
+(defn ensure-door 
+  ([game loc]
+    (if (seq (get-things game loc))
+      game
+      (maybe-place-thing game loc loc (lib/create game "[:is-door]")))))
+
+(defn ensure-doors [game room]
+  (reduce 
+    ensure-door
+    game
+    (:connections room)))
+
+(defn decorate-lair [game room]
+  (let [lmin (:lmin room)
+        lmax (:lmax room)]
+    (reduce 
+      (fn [game _]
+        (and-as-> game game
+          (maybe-place-thing game lmin lmax (lib/create game "[:is-creature]" (- (lmin 2))))
+          (maybe-place-thing game lmin lmax (lib/create game "[:is-item]" (- (lmin 2))))))
+      game
+      (range (Rand/d 10)))))
+
+(defn decorate-normal-room [game room]
+  (let [lmin (:lmin room)
+        lmax (:lmax room)]
+    (and-as-> game game
+      (if (Rand/chance 0.3) (maybe-place-thing game lmin lmax (lib/create game "[:is-creature]" (- (lmin 2)))) game)        
+      (if (Rand/chance 0.5) (maybe-place-thing game lmin lmax (lib/create game "[:is-potion]" (- (lmin 2)))) game)
+      )))
+
+(defn decorate-room [game room]
+  (and-as-> game game 
+    (cond
+      (Rand/chance 0.02)
+        (decorate-lair game room)
+      (Rand/chance 0.2)
+        (decorate-normal-room game room)
+      :else
+        ;; an empty room
+      game)
+    (ensure-doors game room)))
+
+(defn decorate-rooms [game]
+  (reduce 
+    decorate-room
+    game
+    (:rooms game)))
 
 (defn generate-room [game ^mikera.orculje.engine.Location lmin 
                           ^mikera.orculje.engine.Location lmax
@@ -44,6 +92,7 @@
     (and-as-> game game
       (mm/fill-block game (loc (dec x1) (dec y1) z) (loc (inc x2) (inc y2) z) (lib/create game "wall"))
       (mm/fill-block game lmin lmax (lib/create game "floor"))
+      (assoc game :rooms (conj (or (:rooms game) []) {:lmin lmin :lmax lmax :connections connections}))
       (reduce (fn [game con]
                 (mm/fill-block game con con (lib/create game "floor"))) game connections))))
 
@@ -92,9 +141,10 @@
         w (inc (- x2 x1))
         h (inc (- y2 y1))
         sw (if (== 0 split-dir) w h)]
-    (or-loop [10]
-      (let [split-point (+ 3 (Rand/r (- sw 6)))]
-        (if (some (fn [^mikera.orculje.engine.Location l] (== split-point (nth l split-dir))) connections)
+    (or-loop [20]
+      (let [split-point (+ 3 (Rand/r (- sw 6)))
+            split-val (+ split-point (lmin split-dir))]
+        (if (some (fn [^mikera.orculje.engine.Location l] (== split-val (nth l split-dir))) connections)
           nil
           split-point)))))
 
@@ -130,7 +180,7 @@
               new-con2 (if (== split-dir 0)
                         (loc (+ x1 split-point) (+ y1 (Rand/r h)) z)
                         (loc (+ x1 (Rand/r w)) (+ y1 split-point) z))
-              new-cons (if (and (> (Rand/d w) 7) (> 1 (loc-dist-manhattan new-con new-con2)))
+              new-cons (if (and (Rand/chance 0.4) (> 2 (loc-dist-manhattan new-con new-con2)))
                          [new-con new-con2]
                          [new-con])] 
           (and-as-> game game
@@ -159,15 +209,23 @@
                   game
                   (range z1 (inc z2))))))
 
+(defn generate-dungeon 
+  "Attempts to generate dungeon. May return nil on failure" 
+  [game]
+   (let [lmin (loc -30 -30 -10)
+        lmax (loc 30 30 0)]
+    (and-as-> game game
+              (mm/fill-block game (loc-dec lmin) (loc-inc lmax) (lib/create game "rock wall"))
+              (generate-region game lmin lmax )
+              (decorate-rooms game))))
+
 (defn generate 
    "Main dungeon generation algorithm"
   [game]
   (let [lmin (loc -30 -30 -10)
         lmax (loc 30 30 0)]
-    (as-> game game
-        (mm/fill-block game (loc-dec lmin) (loc-inc lmax) (lib/create game "rock wall"))
-        (loop [game game i 10]
-          (or (generate-region game lmin lmax )
+    (loop [game game i 100]
+          (or (generate-dungeon game)     
               (when (> i 0)
                 (println "Retrying map generation: " i)
-                (recur game (dec i))))))))
+                (recur game (dec i)))))))

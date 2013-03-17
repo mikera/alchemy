@@ -149,7 +149,8 @@
 ;; identification
 
 (defn identify [game thing]
-  (let [name (:name thing)]
+  (let [thing (or (get-thing game thing) thing)
+        name (:name thing)]
     (update-in game [:lib :objects name :is-identified] (fn [old] true))))
 
 (defn is-identified? [game thing]
