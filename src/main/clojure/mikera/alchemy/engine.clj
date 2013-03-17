@@ -26,6 +26,8 @@
 
 (defn message
   "Send a message to a given thing. Should be displayed iff it is the hero."
+  ([game msg]
+    (message game (hero game) msg))
   ([game thing & ss]
     (if (:is-hero thing)
       (let [ss (map text/capitalise ss)
@@ -130,10 +132,18 @@
 
 (defn extend-discovery
   "Extends tile discovery based on current visibility"
-  (^PersistentTreeGrid [^BitGrid bg ^PersistentTreeGrid discovered-world ^PersistentTreeGrid world]
-    (let [de (mikera.alchemy.DiscoveryExtender. bg discovered-world world)]
-      (or bg (error "No bitgrid?!?!"))
-      (.visitSetBits bg de)
+  (^PersistentTreeGrid [^BitGrid viz ^PersistentTreeGrid discovered-world game]
+    (let [^PersistentTreeGrid world (:world game)
+          ^PersistentTreeGrid things (:things game)
+          discovery-fn (fn [x y z]
+                         (let [x (int x) y (int y) z (int z)]
+                           (or 
+                             (find/find-first :is-scenery (get-things game x y z))
+                             (.get world x y z))))
+          de (mikera.alchemy.DiscoveryExtender. viz discovered-world discovery-fn)
+          ]
+      (or viz (error "No visibility bitgrid?!?!"))
+      (.visitSetBits viz de)
       (.grid de))))
 
 (def LOS_RAYS 100)
@@ -160,7 +170,7 @@
           (assoc game :visibility (extend-visibility bg)) ;; extend visibility by 1 square in all directions
           (assoc game :discovered-world (extend-discovery (or (:visibility game) (error "!!!!")) 
                                                           (:discovered-world game) 
-                                                          (:world game))))))
+                                                          game)))))
 
 (defn is-square-visible? [^mikera.orculje.engine.Game game loc-or-thing                       ]
   (let [^BitGrid viz (:visibility game)

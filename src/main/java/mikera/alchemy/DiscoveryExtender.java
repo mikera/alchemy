@@ -1,30 +1,31 @@
 package mikera.alchemy;
 
+import clojure.lang.IFn;
 import mikera.engine.BitGrid;
 import mikera.engine.BlockVisitor;
 import mikera.engine.PersistentTreeGrid;
+import mikera.util.Tools;
 
 public class DiscoveryExtender extends BlockVisitor<Boolean> {
 	public BitGrid bg;
 	
-	public PersistentTreeGrid<Object> source;
+	public IFn func;
 	public PersistentTreeGrid<Object> grid;
 	
-	public DiscoveryExtender(BitGrid bg, PersistentTreeGrid<Object> dg, PersistentTreeGrid<Object> source) {
+	public DiscoveryExtender(BitGrid bg, PersistentTreeGrid<Object> dg, IFn func) {
 		this.bg=bg;
 		this.grid=dg;
-		this.source=source;
+		this.func=func;
 	}
 	
 	@Override
 	public Object visit(int x1, int y1, int z1, int x2, int y2, int z2,
 			Boolean value) {
 		if (!value) return null;
-		if (grid.get(x1, y1, z1)== null) {
-			Object sv=source.get(x1, y1, z1);
-			if (sv!=null) {
-				grid=grid.set(x1, y1, z1, sv);
-			}
+		Object v=grid.get(x1, y1, z1);
+		Object sv=func.invoke(x1, y1, z1);
+		if (!Tools.equalsWithNulls(v, sv)) {
+			grid=grid.set(x1, y1, z1, sv);
 		}
 		return null;
 	}

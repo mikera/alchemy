@@ -20,7 +20,7 @@
 (def SCREEN_WIDTH 80)
 (def SCREEN_HEIGHT 30)
 (def RIGHT_AREA_WIDTH 0) 
-(def STATUS_BAR_HEIGHT 2) 
+(def STATUS_BAR_HEIGHT 3) 
 (def MAX_DISPLAYED_MESSAGES 5)
 
 (def TEXT_COLOUR (colour 0xC0C0C0))
@@ -105,13 +105,14 @@
                 d2 (let [dx (- hx tx) dy (- hy ty)] (+ (* dx dx) (* dy dy)))
                 visible? (.get viz tx ty hz)
                 dtile (.get disc tx ty hz)
-                base (if (and dtile (:is-blocking dtile)) 0.25 0.0)
+                base (if (and dtile (not (:is-floor dtile))) 0.35 0.0)
                 t (if visible?
                     (displayable-thing game tx ty oz)
-                    dtile)
+                    (or dtile world/UNSEEN_TILE))
                 t (or t world/BLANK_TILE)
-                ^Color fg (or (? t :colour-fg) (error "No foreground colour! on " (:name t)))
-                ^Color bg (or (? t :colour-bg) (error "No foreground colour! on " (:name t)))
+                base (if (:is-unseen-tile t) 0.5 base)
+                ^Color fg (or (? t :colour-fg) (error "No foreground colour! on " (str t)))
+                ^Color bg (or (? t :colour-bg) (error "No foreground colour! on " (str t)))
                 ^Color fg (if visible? (shade-colour fg d2 base) (shade-colour fg 1000000.0 base))
                 ^Color bg (if visible? (shade-colour bg d2 base) (shade-colour bg 1000000.0 base))]
 	          (.setForeground jc fg)
@@ -363,6 +364,12 @@
 	      gh (int (- h STATUS_BAR_HEIGHT))
         cx (int (quot gw 2)) 
         cy (int (quot gh 2)) 
+        ^mikera.engine.BitGrid viz (or (:visibility game) (error "No visibility defined!"))
+        ^mikera.engine.PersistentTreeGrid disc (or (:discovered-world game) (error "No discovered world?!?")) 
+        visible? (.get viz cx cy (int z))
+        dthing (if visible?
+                 (displayable-thing game cx cy (int z))
+                 (or (.get disc x y z) world/UNSEEN_TILE))
        ]
     (redraw-world state loc)
     (redraw-stats state)
@@ -370,7 +377,8 @@
     (.setForeground jc ^Color TEXT_COLOUR)
     (.setBackground jc ^Color (colour 0x200000))
     (gui/draw jc 1 0 msg)
-    (gui/draw jc 3 1 (mikera.orculje.text/capitalise (engine/a-name game (displayable-thing game x y z)))) 
+    (gui/draw jc 3 1 
+              (mikera.orculje.text/capitalise (engine/a-name game dthing))) 
     (draw-crosshairs jc cx cy)
     (reset! (:event-handler state)
 	          (fn [^String k]
@@ -378,7 +386,7 @@
 	              (cond 
 	                (>= sel 0)
 	                  (map-select-handler state msg (loc-add loc (move-dir-map k)) action )
-	                (= " " k)
+	                (and (= " " k) visible?)
                     (action loc)
                   (= "Q" k)
                     (main-handler state)

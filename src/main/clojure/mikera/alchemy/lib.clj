@@ -14,12 +14,21 @@
 ;; ===================================================
 ;; library constants
 
-(def BLANK_TILE_PROPS {:name "nothing"
-                       :proper-name "nothing"
+(def BLANK_TILE_PROPS {:name "blackness"
+                       :proper-name "blackness"
                        :is-tile true
                        :char \space
-                       :colour-fg (colour 0x000000)
+                       :colour-fg (colour 0xFFFFFF)
                        :colour-bg (colour 0x000000)
+                       :z-order (long -100)})
+
+(def UNSEEN_TILE_PROPS {:name "unexplored space"
+                       :proper-name "unexplored space"
+                       :is-unseen-tile true
+                       :is-tile true
+                       :char \space
+                       :colour-fg (colour 0x808080)
+                       :colour-bg (colour 0x404040)
                        :z-order (long -100)})
 
 (def MAIN_STATS {:SK {:name "skill"}
@@ -92,6 +101,7 @@
                :z-order 50})
     (proclaim "base floor" "base tile" 
               {:is-blocking false
+               :is-floor true
                :char (char 0x00B7)
                :z-order 0})
     (proclaim "floor" "base floor" 
@@ -532,10 +542,20 @@
               {:level 0 
                :on-consume (consume-function [game item actor]
                              (let [hps (:hps actor)
-                                   new-hps (+ hps (Rand/r (:TG actor)))]
-                               (! actor :hps new-hps)
-                               (engine/message game actor
-                                 (if (> new-hps hps) "You feel healthier." "You feel very healthy."))))})
+                                   new-hps (min (:hps-max actor) (+ hps (Rand/d (:TG actor))))]
+                               (as-> game game
+                                 (! actor :hps new-hps)
+                                 (engine/message game actor
+                                   (if (> new-hps hps) "You feel healthier." "You feel very healthy.")))))})
+    (proclaim "health gain potion" "base potion" 
+              {:level 3 
+               :on-consume (consume-function [game item actor]
+                             (let [boost (Rand/d (long* 0.5 (:TG actor)))]
+                               (as-> game game
+                                 (!+ game actor :hps boost)
+                                 (!+ game actor :hps-max boost)
+                                 (engine/message game actor
+                                   "You feel amazingingly good..."))))})
     (proclaim "cure poison potion" "base potion" 
               {:level 2 
                :on-consume (consume-function [game item actor]

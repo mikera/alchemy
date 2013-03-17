@@ -165,7 +165,10 @@
         game
         connections)
       (reduce (fn [game con]
-        (mm/fill-block game con con (lib/create game "cave floor"))) game connections))))
+        (mm/fill-block game con con (lib/create game "cave floor"))) game connections)
+      (if (and (== 1 (count connections)) (Rand/chance 0.5))
+        (maybe-place-thing game cloc cloc (lib/create game "[:is-item]" (- (lmin 2))))
+        game))))
 
 (defn generate-grid-corridor [game
                             ^mikera.orculje.engine.Location lmin 
@@ -329,6 +332,7 @@
               (place-exit-staircase game lmin lmax)
               (place-philosophers-stone game lmin lmax)
               (decorate-rooms game)
+              (connect-levels game lmin lmax)
               (connect-levels game lmin lmax))))
 
 (defn generate 

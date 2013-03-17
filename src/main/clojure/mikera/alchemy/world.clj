@@ -18,6 +18,7 @@
 ;; constants
 
 (def BLANK_TILE (thing lib/BLANK_TILE_PROPS))
+(def UNSEEN_TILE (thing lib/UNSEEN_TILE_PROPS))
 
 
 ;; ======================================================
@@ -165,8 +166,8 @@
       (if (engine/check (? game h :IN) 5)
         (as-> game game 
           (engine/identify game item)
-          (engine/message game (str "You successfully identify " (engine/the-name game item))))
-        (engine/message game (str "You fail to identify " (engine/the-name game item))))
+          (engine/message game h (str "You successfully identify " (engine/the-name game item))))
+        (engine/message game h (str "You fail to identify " (engine/the-name game item))))
       (or (and (:lib game) game) (error "No game!?!?"))
       (engine/use-aps game h 100) 
       (end-turn game))))
