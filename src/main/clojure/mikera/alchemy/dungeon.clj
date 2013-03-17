@@ -111,7 +111,7 @@
 (defn decorate-room [game room]
   (and-as-> game game 
     (cond
-      (Rand/chance 0.02)
+      (Rand/chance 0.03)
         (decorate-lair game room)
       (Rand/chance 0.2)
         (decorate-normal-room game room)

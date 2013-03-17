@@ -21,7 +21,7 @@
 (def BLANK_TILE (thing lib/BLANK_TILE_PROPS))
 (def UNSEEN_TILE (thing lib/UNSEEN_TILE_PROPS))
 
-(def WANDERING_MONSTER_RATE 10000) ;; number of ticks per monster add
+(def WANDERING_MONSTER_RATE 5000) ;; number of ticks per monster add
 
 ;; ======================================================
 ;; key external functions (called by main namespace)

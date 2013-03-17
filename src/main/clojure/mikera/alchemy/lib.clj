@@ -258,6 +258,16 @@
                                                    [:SK :ST :AG :TG :IN :WP :CH :CR])))
                :on-effect (fn [game effect target]
                             (engine/damage game target (:damage-amount effect) :poison))}
+              )
+    (proclaim "sick!" "base periodic effect"
+              {:lifetime 40000
+               :period 1000
+               :damage-amount 2
+               :parent-modifiers (vec (concat [(modifier :colour-bg (colour 0x400040))]
+                                              (map #(modifier % (long* value 0.7)) 
+                                                   [:SK :ST :AG :TG :IN :WP :CH :CR])))
+               :on-effect (fn [game effect target]
+                            (engine/damage game target (:damage-amount effect) :poison))}
               )))
 
 (defn define-temp-effects [lib]
@@ -643,8 +653,11 @@
               {:level 1
                :on-consume (potion-effect-function "confused")})
     (proclaim "sickness potion" "base potion" 
-              {:level 5
+              {:level (Rand/d 6)
                :on-consume (potion-effect-function "sick")})
+    (proclaim "enhanced sickness potion" "base potion" 
+              {:level (+ 2 (Rand/d 8))
+               :on-consume (potion-effect-function "sick!")})
     (proclaim "regeneration potion" "base potion" 
               {:level (Rand/d 8) 
                :on-consume (potion-effect-function "regenerating")})
