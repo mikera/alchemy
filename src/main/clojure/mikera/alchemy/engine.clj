@@ -17,29 +17,6 @@
 
 (def LOG_LENGTH 100)
 
-(defn clear-messages [game]
-  (if (seq (:messages game))
-    (as-> game game
-          (assoc game :messages [])
-          (assoc game :message-log (vec (take LOG_LENGTH (cons [] (:message-log game))))))
-    game))
-
-(defn message
-  "Send a message to a given thing. Should be displayed iff it is the hero."
-  ([game msg]
-    (message game (hero game) msg))
-  ([game thing & ss]
-    (if (:is-hero thing)
-      (let [ss (map text/capitalise ss)
-           msgs (or (:messages game) [])
-           new-msgs (vec (concat msgs ss))
-           mlog (or (:message-log game) [msgs])
-           new-mlog (assoc mlog 0 new-msgs)]
-       (as-> game game
-         (assoc game :messages new-msgs)
-         (assoc game :message-log new-mlog)))
-      game)))
-
 
 ;; ======================================================
 ;; query functions
@@ -94,6 +71,33 @@
     (fn [game it] (remove-item game hero it))
     game
     things-or-names))
+
+;; =========================================================
+;; messages
+
+(defn clear-messages [game]
+  (if (seq (:messages game))
+    (as-> game game
+          (assoc game :messages [])
+          (assoc game :message-log (vec (take LOG_LENGTH (cons [] (:message-log game))))))
+    game))
+
+(defn message
+  "Send a message to a given thing. Should be displayed iff it is the hero."
+  ([game msg]
+    (message game (hero game) msg))
+  ([game thing & ss]
+    (if (:is-hero thing)
+      (let [ss (map text/capitalise ss)
+           msgs (or (:messages game) [])
+           new-msgs (vec (concat msgs ss))
+           mlog (or (:message-log game) [msgs])
+           new-mlog (assoc mlog 0 new-msgs)]
+       (as-> game game
+         (assoc game :messages new-msgs)
+         (assoc game :message-log new-mlog)))
+      game)))
+
 
 ;; =======================================================
 ;; item creation

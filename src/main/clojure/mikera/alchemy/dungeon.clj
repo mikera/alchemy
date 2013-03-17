@@ -327,6 +327,7 @@
    (let [lmin (loc -30 -30 -10) 
          lmax (loc 30 30 0)]
      (and-as-> game game
+              (assoc game :volume {:min lmin :max lmax})
               (mm/fill-block game (loc-dec lmin) (loc-inc lmax) (lib/create game "rock wall"))
               (generate-region game lmin lmax )
               (place-exit-staircase game lmin lmax)

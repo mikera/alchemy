@@ -138,12 +138,13 @@
     (if more-msgs? (gui/draw jc 1 (+ sy (dec mh)) "[press m to see more messages]"))))
 
 (def STAT_BACKGROUND_COLOUR (colour 0x301020))
-(def STAT_SPACE " ")
+(def STAT_SPACE "  ")
 
 (defn redraw-stats [state]
   (let [^JConsole jc (:console state)
 	      game @(:game state) 
         hero (engine/hero game) 
+        loc (location game hero) 
 	      w (.getColumns jc)
 	      h (.getRows jc)
 	      sy (- h STATUS_BAR_HEIGHT) 
@@ -167,9 +168,12 @@
                                     (str "IN:" (? game hero :IN) STAT_SPACE)
                                     (str "WP:" (? game hero :WP) STAT_SPACE)
                                     (str "CH:" (? game hero :CH) STAT_SPACE)
-                                    (str "CR:" (? game hero :CR) STAT_SPACE)
-                                    (str "Spd:" (? game hero :speed) STAT_SPACE)
-                                    (str "Lv:" (- ((location game hero) 2)) STAT_SPACE)))
+                                    (str "CR:" (? game hero :CR) STAT_SPACE)))
+      (.setForeground jc ^Color TEXT_COLOUR)
+      (gui/draw jc 1 (+ sy 1) (str "Lvl: " (- (loc 2)) "/10"))
+      (.setForeground jc ^Color TEXT_COLOUR)
+      (gui/draw jc 16 (+ sy 1) (str (str "ARM:" (? game hero :ARM) STAT_SPACE)
+                                    (str "Speed:" (? game hero :speed) STAT_SPACE)))
       (.setForeground jc ^Color TEXT_COLOUR)
       (let [effs (filter :is-effect (contents hero))
             eff-string (apply str (distinct (map #(str (text/capitalise (:name %)) "  ") effs)))]
@@ -195,7 +199,7 @@
 ;; command
 
 (def COMMANDS
-  [["a" "Use an analysis lab to identify potions and their composition"]
+  [["a" "Use an analysis lab to identify items and their composition"]
    ["c" "Use an alchemy workbench to craft potions"]
    ["d" "Drop an item"]
    ["e" "Eat a food item"]
@@ -203,6 +207,7 @@
    ["l" "Look around (movement keys to move cursor)"]
    ["m" "Show recent messages"]
    ["o" "Open / close a door, box or mechanism"]
+   ["p" "Pick upan item"]
    ["q" "Quaff potion"]
    ["t" "Throw something"]
   ])
@@ -424,15 +429,15 @@
   (let [game @(:game state)
         hero (engine/hero game)
         inv (vec (filter 
-                   (fn [p] (and (:is-potion p) (not (engine/is-identified? game p))))
+                   (fn [p] (and (:is-item p) (not (engine/is-identified? game p))))
                    (contents hero)))]
     (cond
       (== 0 (count inv))
         (do 
-          (swap! (:game state) world/message "You have no potions to analyse.")
+          (swap! (:game state) world/message "You have no items to analyse.")
           (main-handler state))
       (find-nearest-thing game (name-pred "analysis lab") hero 1)
-        (item-select-handler state "Analyse a potion:" 
+        (item-select-handler state "Analyse an item:" 
                            (vec (map (partial engine/base-name game) inv))
                            0
                            (fn [n] 
