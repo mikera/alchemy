@@ -97,6 +97,24 @@
               {:colour-fg (colour 0x606060)})
     (proclaim "cave floor" "base floor" 
               {:colour-fg (colour 0x604020)})
+    (proclaim "underground stream" "base floor" 
+              {:char (char 0x2248)
+               :colour-fg (colour 0x0030FF)})
+    (proclaim "murky pool" "base floor" 
+              {:char (char 0x2248)
+               :colour-fg (colour 0x409020)})
+    (proclaim "shallow pool" "base floor" 
+              {:is-blocking false
+               :char (char 0x2248)
+               :colour-fg (colour 0x0030FF)})
+    (proclaim "deep pool" "base floor" 
+              {:is-blocking true
+               :char (char 0x2248)
+               :colour-fg (colour 0x0030FF)})
+    (proclaim "magma pool" "base floor" 
+              {:is-blocking true
+               :char (char 0x2248)
+               :colour-fg (colour 0xFF8000)})
     (proclaim "wall" "base wall" 
               {:colour-fg (colour 0xC08040)
                :colour-bg (colour 0x804000)})
@@ -346,7 +364,11 @@
                :colour-fg (colour 0xFFFF00)})
     (proclaim "analysis lab" "base apparatus" 
               {:char (char 0x0468)
-               :colour-fg (colour 0x00FFFF)})))
+               :colour-fg (colour 0x00FFFF)
+               :on-use (fn [game app actor]
+                         (as-> game game
+                               (engine/message game actor "You analyse all your potions....")
+                               (engine/identify-all game :is-potion (contents actor))))})))
 
 (defn define-clouds [lib]
   (-> lib
@@ -376,10 +398,10 @@
                :on-use (fn [game app actor]
                          (engine/message game actor (str "You don't know how to use " (the-name game app) ".")))})
     (proclaim "up staircase" "base stairs" 
-              {:move-dir (loc 0 0 -1)
+              {:move-dir (loc 0 0 1)
                :char \<})
     (proclaim "down staircase" "base stairs" 
-              {:move-dir (loc 0 0 1)
+              {:move-dir (loc 0 0 -1)
                :char \>})
     (proclaim "exit staircase" "up staircase" 
               {:move-dir nil})))

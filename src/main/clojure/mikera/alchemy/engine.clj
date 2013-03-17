@@ -153,6 +153,15 @@
         name (:name thing)]
     (update-in game [:lib :objects name :is-identified] (fn [old] true))))
 
+(defn identify-all [game pred things]
+  (reduce 
+    (fn [game thing]
+      (if (pred thing)
+        (identify game thing)
+        game))
+    game 
+    things))
+
 (defn is-identified? [game thing]
   (or (:is-identified thing)
       (:is-identified ((:objects (:lib game)) (:name thing)))))

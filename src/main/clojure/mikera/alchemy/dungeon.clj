@@ -68,6 +68,17 @@
       game
       (range (Rand/d 12)))))
 
+(defn decorate-lab [game room]
+  (let [lmin (:lmin room)
+        lmax (:lmax room)]
+    (and-as-> game game
+      (reduce 
+        (fn [game _]
+          (maybe-place-thing game lmin lmax (lib/create game "[:is-potion]")))
+        game
+        (range (Rand/d 8)))
+      (maybe-place-thing game lmin lmax (lib/create game "[:is-apparatus]")))))
+
 (defn decorate-normal-room [game room]
   (let [lmin (:lmin room)
         lmax (:lmax room)]
@@ -75,6 +86,19 @@
       (if (Rand/chance 0.3) (maybe-place-thing game lmin lmax (lib/create game "[:is-creature]" (- (lmin 2)))) game)        
       (if (Rand/chance 0.5) (maybe-place-thing game lmin lmax (lib/create game "[:is-potion]" (- (lmin 2)))) game)
       )))
+
+(defn decorate-designer-room [game room]
+  (let [lmin (:lmin room)
+        lmax (:lmax room)
+        [x1 y1 z] lmin
+        [x2 y2 z] lmax]
+    (cond 
+      
+      :else 
+        (mm/fill-block game 
+                       (loc (inc x1) (inc y1) z)
+                       (loc (dec x2) (dec y2) z)
+                       (lib/create game (Rand/pick ["murky pool" "shallow pool" "deep pool" "magma pool"]))))))
 
 (defn decorate-room [game room]
   (and-as-> game game 
@@ -85,6 +109,10 @@
         (decorate-normal-room game room)
       (Rand/chance 0.2)
         (decorate-store-room game room (Rand/pick ["[:is-food]" "[:is-potion]" "[:is-ingredient]" "[:is-herb]"]))
+      (Rand/chance 0.05)
+        (decorate-lab game room)
+      (Rand/chance 0.1)
+        (decorate-designer-room game room)
       :else
         ;; an empty room
       game)
@@ -114,26 +142,26 @@
   [game ^mikera.orculje.engine.Location lmin 
         ^mikera.orculje.engine.Location lmax
         ^mikera.orculje.engine.Location lfrom
-        ^mikera.orculje.engine.Location lto]
+        ^mikera.orculje.engine.Location lto
+        type]
     (if (= lfrom lto) 
       (mm/fill-block game lfrom lfrom (lib/create game "cave floor"))
-      (let [game (mm/fill-block game lfrom lfrom (lib/create game "cave floor"))
+      (let [game (mm/fill-block game lfrom lfrom (lib/create game type))
             dir (if (Rand/chance 0.3)
                   (Rand/pick TUNNEL-DIRS)
                   (if (Rand/chance 0.5)
                     (loc 0 (Math/signum (double (- (.y lto) (.y lfrom)))) 0)
                     (loc (Math/signum (double (- (.x lto) (.x lfrom)))) 0 0)))
             nloc (loc-bound lmin lmax (loc-add dir lfrom))]
-        (recur game lmin lmax nloc lto))))
+        (recur game lmin lmax nloc lto type))))
 
 (defn generate-caves [game ^mikera.orculje.engine.Location lmin 
                           ^mikera.orculje.engine.Location lmax
                           connections]
   (let [cloc (rand-loc lmin lmax)]
     (and-as-> game game
-      (mm/fill-block game lmin lmax (lib/create game "rock wall"))
       (reduce
-        (fn [game c] (generate-tunnel game lmin lmax (loc-bound lmin lmax c) cloc))
+        (fn [game c] (generate-tunnel game lmin lmax (loc-bound lmin lmax c) cloc "cave floor"))
         game
         connections)
       (reduce (fn [game con]
@@ -206,6 +234,7 @@
   (let [[x1 y1 z] lmin
         [x2 y2 z] lmax]
     (as-> game game
+      (generate-tunnel game lmin lmax (rand-loc lmin lmax) (rand-loc lmin lmax) "underground stream")
       (or-loop [5] 
         (generate-zone game lmin lmax [])))))
 
