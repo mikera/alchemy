@@ -126,9 +126,16 @@
               {:is-blocking true
                :char (char 0x2248)
                :colour-fg (colour 0xFF8000)})
+    
+    
     (proclaim "wall" "base wall" 
               {:colour-fg (colour 0xC08040)
                :colour-bg (colour 0x804000)})
+    (proclaim "pillar" "base wall" 
+              {:char (char 0x25CF)
+               :colour-fg (colour 0xC08040)
+               :colour-bg (colour 0x000000)})
+
     (proclaim "rock wall" "base wall" 
               {:colour-fg (colour 0xF0F0F0)
                :colour-bg (colour 0x607080)})
@@ -528,7 +535,7 @@
     (let [statname (:name (MAIN_STATS stat))]
       (-> lib
         (proclaim (str "gain " statname " potion") "base stat potion" 
-              {:level (+ 3 (Rand/d 7))
+              {:level (+ 1 (Rand/d 8))
                :on-consume  (consume-function [game item actor]
                               (!+ actor stat (Rand/d 4)) (engine/message game actor (str "You feel you have gained in " statname "!")))})
         (proclaim (str statname " boost potion") "base stat potion" 
@@ -548,7 +555,7 @@
                                  (engine/message game actor
                                    (if (> new-hps hps) "You feel healthier." "You feel very healthy.")))))})
     (proclaim "health gain potion" "base potion" 
-              {:level 3 
+              {:level 2 
                :on-consume (consume-function [game item actor]
                              (let [boost (Rand/d (long* 0.5 (:TG actor)))]
                                (as-> game game
@@ -827,8 +834,16 @@
                     :speed 80
                     :char \z
                     :colour-fg (colour 0x808080)})
+    (proclaim "ghast" "base undead"
+              {:level 5
+               :SK 6 :ST 10 :AG 12 :TG 10 :IN 0 :WP 0 :CH 0 :CR 0
+               :hps 20            
+               :speed 100
+               :char \G
+               :colour-fg (colour 0x808080)
+               :attack (merge ATT_NORMAL {:damage-effect "slowed" :damage-effect-chance 0.2})})
     (proclaim "skeleton" "base undead" 
-                   {:level 5
+                   {:level 4
                     :SK 10 :ST 10 :AG 6 :TG 10 :IN 0 :WP 0 :CH 0 :CR 0
                     :hps 10
                     :char \s
@@ -857,7 +872,7 @@
     (proclaim "spectre" "base undead" 
                    {:level 10
                     :SK 25 :ST 25 :AG 20 :TG 25 :IN 0 :WP 0 :CH 0 :CR 0
-                    :hps 20            
+                    :hps 30            
                     :speed 150
                     :char \S
                     :colour-fg (colour 0x808080)
@@ -939,7 +954,7 @@
                    {})
     (proclaim "white snake" "base snake"
                    {:level 2
-                    :colour-fg (colour 0x60C060)
+                    :colour-fg (colour 0xFFFFFF)
                     :attack (merge ATT_BITE {:damage-effect "confused!" :damage-effect-chance 40})})
     (proclaim "cobra" "base snake"
                    {:SK 4 :ST 3 :AG 10 :TG 7 :IN 4 :WP 9 :CH 8 :CR 3

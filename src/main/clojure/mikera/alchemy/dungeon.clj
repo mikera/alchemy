@@ -51,13 +51,14 @@
 (defn decorate-lair [game room]
   (let [lmin (:lmin room)
         lmax (:lmax room)]
-    (reduce 
-      (fn [game _]
-        (and-as-> game game
-          (maybe-place-thing game lmin lmax (lib/create game "[:is-creature]" (- (lmin 2))))
-          (maybe-place-thing game lmin lmax (lib/create game "[:is-item]" (- (lmin 2))))))
-      game
-      (range (Rand/d 10)))))
+    (let [mtype (Rand/pick ["[:is-undead]" "[:is-creature]" "[:is-goblinoid]" "[:is-snake]"])]
+      (reduce 
+        (fn [game _]
+          (and-as-> game game
+                    (maybe-place-thing game lmin lmax (lib/create game mtype (- (lmin 2))))
+                    (maybe-place-thing game lmin lmax (lib/create game "[:is-item]" (- (lmin 2))))))
+        game
+        (range (Rand/d 10))))))
 
 (defn decorate-store-room [game room type]
   (let [lmin (:lmin room)
@@ -77,7 +78,7 @@
         (fn [game _]
           (maybe-place-thing game lmin lmax (lib/create game "[:is-potion]")))
         game
-        (range (Rand/d 8)))
+        (range (Rand/d 4)))
       (maybe-place-thing game lmin lmax (lib/create game "[:is-apparatus]")))))
 
 (defn decorate-normal-room [game room]
@@ -94,7 +95,13 @@
         [x1 y1 z] lmin
         [x2 y2 z] lmax]
     (cond 
-      
+      (Rand/chance 0.3)
+        (let [pillar (Rand/pick ["wall" "pillar"])]
+          (as-> game game
+            (set-tile game (loc (inc x1) (inc y1) z) (lib/create game pillar))
+            (set-tile game (loc (dec x2) (inc y1) z) (lib/create game pillar))
+            (set-tile game (loc (inc x1) (dec y2) z) (lib/create game pillar))
+            (set-tile game (loc (dec x2) (dec y2) z) (lib/create game pillar))))
       :else 
         (mm/fill-block game 
                        (loc (inc x1) (inc y1) z)
@@ -109,8 +116,8 @@
       (Rand/chance 0.2)
         (decorate-normal-room game room)
       (Rand/chance 0.2)
-        (decorate-store-room game room (Rand/pick ["[:is-food]" "[:is-potion]" "[:is-ingredient]" "[:is-herb]"]))
-      (Rand/chance 0.1)
+        (decorate-store-room game room (Rand/pick ["[:is-food]" "[:is-potion]" "[:is-mushroom]" "[:is-ingredient]" "[:is-herb]"]))
+      (Rand/chance 0.07)
         (decorate-lab game room)
       (Rand/chance 0.1)
         (decorate-designer-room game room)

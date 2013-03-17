@@ -115,7 +115,7 @@
             (engine/update-visibility game)
             (assoc game :turn (inc turn))
             (! game hero :aps 0)
-            (assoc game :max-level (max (.z hloc) (:max-level game)))
+            (assoc game :max-level (max (- (.z hloc)) (:max-level game)))
             ;;(do (println "Turn ended") game)
             ))))
 

@@ -391,7 +391,7 @@
 	              (cond 
 	                (>= sel 0)
 	                  (map-select-handler state msg (loc-add loc (move-dir-map k)) action )
-	                (and (= " " k) visible?)
+	                (and (= " " k) (engine/is-square-visible? game loc))
                     (action loc)
                   (= "Q" k)
                     (main-handler state)

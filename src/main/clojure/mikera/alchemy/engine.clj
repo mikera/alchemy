@@ -394,7 +394,9 @@
 
 (defn has-ingredients? [game hero potion]
   (let [ingreds (or (:ingredients potion) (error "potion has no ingredient list!"))]    
-    (every? #(has-item? game hero %) ingreds)))
+    (every? #(and 
+               (has-item? game hero %)
+               (is-identified? game (create game %))) ingreds)))
 
 
 ;; ======================================================
