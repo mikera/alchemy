@@ -205,15 +205,16 @@
         [x2 y2 z] lmax
         w (inc (- x2 x1))
         h (inc (- y2 y1))
-        sw (if (== 0 split-dir) w h)]
+        sw (if (== 0 split-dir) w h)
+        sw2 (quot sw 2)]
     (or-loop [20]
-      (let [split-point (+ 3 (Rand/r (- sw 6)))
+      (let [split-point (+ 3 (Rand/r (- sw sw2 3)) (Rand/r (- sw2 3)))
             split-val (+ split-point (lmin split-dir))]
         (if (some (fn [^mikera.orculje.engine.Location l] (== split-val (nth l split-dir))) connections)
           nil
           split-point)))))
 
-(def MAX_BLOCK_SIZE 20)
+(def MAX_BLOCK_SIZE 16)
 (def MIN_ZONE_SIZE 7)
 
 (defn generate-zone [game ^mikera.orculje.engine.Location lmin 

@@ -194,7 +194,9 @@
 ;; command
 
 (def COMMANDS
-  [["d" "Drop an item"]
+  [["a" "Use an analysis lab to identify potions and their composition"]
+   ["c" "Use an alchemy workbench to craft potions"]
+   ["d" "Drop an item"]
    ["e" "Eat a food item"]
    ["i" "Inventory (select an item to examine it)"]
    ["l" "Look around (movement keys to move cursor)"]
@@ -409,6 +411,30 @@
                         (swap! (:game state) world/handle-alchemy (inv n))
                         (main-handler state))))) 
 
+
+(defn choose-analyse [state]
+  (let [game @(:game state)
+        hero (engine/hero game)
+        inv (vec (filter 
+                   (fn [p] (and (:is-potion p) (not (engine/is-identified? game p))))
+                   (contents hero)))]
+    (cond
+      (== 0 (count inv))
+        (do 
+          (swap! (:game state) world/message "You have no potions to analyse.")
+          (main-handler state))
+      (find-nearest-thing game (name-pred "analysis lab") hero 1)
+        (item-select-handler state "Analyse a potion:" 
+                           (vec (map (partial engine/base-name game) inv))
+                           0
+                           (fn [n] 
+                             (swap! (:game state) world/handle-analyse (inv n))
+                             (main-handler state)))
+      :else 
+        (do 
+          (swap! (:game state) world/message "You need to find an analysis lab to analyse potions.")
+          (main-handler state))))) 
+
 (defn choose-drop [state]
   (let [game @(:game state)
         hero (engine/hero game)
@@ -455,11 +481,14 @@
 (defn choose-pickup [state]
   (let [game @(:game state)
         inv (vec (filter :is-item (get-things game (engine/hero-location game))))]
-    (if (== 1 (count inv))
-      (do 
-        (swap! (:game state) world/handle-pickup (inv 0))
-        (main-handler state))
-      (item-select-handler state "Pick up an item:" 
+    (cond 
+      (== 0 (count inv))
+        (swap! (:game state) world/message "There is nothing here to pick up.")
+      (== 1 (count inv))
+        (do 
+          (swap! (:game state) world/handle-pickup (inv 0))
+          (main-handler state))
+      :else (item-select-handler state "Pick up an item:" 
                       (vec (map (partial engine/base-name game) inv))
                       0
                       (fn [n] 
@@ -560,7 +589,8 @@
             (do
               (swap! (:game state) world/handle-wait 100)
               (redraw-screen state))
-          (= "a" k) (choose-alchemy state)
+          (= "a" k) (choose-analyse state)
+          (= "c" k) (choose-alchemy state)
           (= "d" k) (choose-drop state)
           (= "e" k) (choose-eat state)
           (= "q" k) (choose-quaff state)

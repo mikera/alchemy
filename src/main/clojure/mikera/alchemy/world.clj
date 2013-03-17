@@ -2,6 +2,7 @@
   (:require [mikera.alchemy.engine :as engine])
   (:require [mikera.alchemy.lib :as lib]) 
   (:require [mikera.cljutils.find :as find]) 
+  (:use [mikera.cljutils.error]) 
   (:require [mikera.alchemy.dungeon :as dungeon]) 
   (:import [mikera.engine PersistentTreeGrid]) 
   (:import [mikera.util Rand]) 
@@ -96,6 +97,14 @@
             ;;(do (println "Turn ended") game)
             ))))
 
+(defn message 
+  "Handles a message to the hero"
+  [game msg]
+  (let [h (engine/hero game)]
+    (as-> game game
+      (engine/clear-messages game)
+      (engine/message game h msg)
+      (end-turn game))))
 
 (defn handle-move 
   "Handles a hero move"
@@ -144,6 +153,22 @@
     (as-> game game
       (engine/clear-messages game)
       (engine/try-alchemy game h item)
+      (end-turn game))))
+
+(defn handle-analyse 
+  "Handles analysis of a potion"
+  [game item]
+  (let [h (or (engine/hero game) (error "no here?!?"))]
+    (as-> game game
+      (engine/clear-messages game)
+      (remove-thing game item) 
+      (if (engine/check (? game h :IN) 5)
+        (as-> game game 
+          (engine/identify game item)
+          (engine/message game (str "You successfully identify " (engine/the-name game item))))
+        (engine/message game (str "You fail to identify " (engine/the-name game item))))
+      (or (and (:lib game) game) (error "No game!?!?"))
+      (engine/use-aps game h 100) 
       (end-turn game))))
 
 (defn handle-open 

@@ -254,13 +254,13 @@
                                   (modifier :AG (long* value 0.7))]})  
     (proclaim "confused" "base temporary effect"
               {:lifetime 20000
-               :parent-modifiers [(modifier :confusion (+ value 3))]})       
+               :parent-modifiers [(modifier :confusion (+ (or value 0) 3))]})       
     (proclaim "confused!" "base temporary effect"
               {:lifetime 10000
-               :parent-modifiers [(modifier :confusion (+ value 8))]})
+               :parent-modifiers [(modifier :confusion (+ (or value 0) 8))]})
     (proclaim "confused!!" "base temporary effect"
               {:lifetime 5000
-               :parent-modifiers [(modifier :confusion (+ value 20))]})))
+               :parent-modifiers [(modifier :confusion (+ (or value 0) 20))]})))
 
 (defn proclaim-stat-effects 
   ([lib]
@@ -366,14 +366,12 @@
               {:char (char 0x046C)
                :colour-fg (colour 0xFFFF00)
                :on-use (fn [game app actor]
-                         (engine/message game actor (str "Press [a] to use " (the-name game app) ".")))})
+                         (engine/message game actor (str "Press [c] to use " (the-name game app) ".")))})
     (proclaim "analysis lab" "base apparatus" 
               {:char (char 0x0468)
                :colour-fg (colour 0x00FFFF)
                :on-use (fn [game app actor]
-                         (as-> game game
-                               (engine/message game actor "You analyse all your potions....")
-                               (engine/identify-all game :is-potion (contents actor))))})))
+                         (engine/message game actor (str "Press [a] to use " (the-name game app) ".")))})))
 
 (defn define-clouds [lib]
   (-> lib
@@ -513,18 +511,18 @@
 
 (defn proclaim-stat-potions 
   ([lib]
-    (reduce (fn [lib stat] (proclaim-stat-potions lib stat)) lib (keys MAIN_STATS)))
+    (as-> lib lib
+      (proclaim lib "base stat potion" "base potion" {:freq 0.3})
+      (reduce (fn [lib stat] (proclaim-stat-potions lib stat)) lib (keys MAIN_STATS))))
   ([lib stat]
     (let [statname (:name (MAIN_STATS stat))]
       (-> lib
-        (proclaim (str "gain " statname " potion") "base potion" 
+        (proclaim (str "gain " statname " potion") "base stat potion" 
               {:level (+ 3 (Rand/d 7))
-               :freq 0.3
                :on-consume  (consume-function [game item actor]
-                              (!+ actor stat (Rand/d 3)) (engine/message game actor (str "You feel you have gained in " statname "!")))})
-        (proclaim (str statname " boost potion") "base potion" 
+                              (!+ actor stat (Rand/d 4)) (engine/message game actor (str "You feel you have gained in " statname "!")))})
+        (proclaim (str statname " boost potion") "base stat potion" 
               {:level (Rand/d 10)
-               :freq 0.3
                :on-consume (potion-effect-function (str statname " boost"))})))))
 
 (defn define-potions [lib]

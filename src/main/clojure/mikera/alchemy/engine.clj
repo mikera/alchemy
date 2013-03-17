@@ -124,12 +124,15 @@
 (defn extend-visibility 
   "Extends visibility by 1 in all directions: needed to see walls / above / below"
   ([^BitGrid bg]
-    (.visitSetBits bg (mikera.alchemy.BitGridExtender. bg))))
+    (let [^mikera.alchemy.BitGridExtender bge (mikera.alchemy.BitGridExtender. bg)]
+      (.visitSetBits bg bge)
+      (or (.result bge) (error "No result!!!")))))
 
 (defn extend-discovery
   "Extends tile discovery based on current visibility"
   (^PersistentTreeGrid [^BitGrid bg ^PersistentTreeGrid discovered-world ^PersistentTreeGrid world]
     (let [de (mikera.alchemy.DiscoveryExtender. bg discovered-world world)]
+      (or bg (error "No bitgrid?!?!"))
       (.visitSetBits bg de)
       (.grid de))))
 
@@ -153,10 +156,11 @@
               (when view-ok?
                 (.set bg px py hz true)
                 (recur (+ d RAY_INC))))))))
-    (extend-visibility bg) ;; extend visibility by 1 square in all directions
     (as-> game game
-          (assoc game :visibility bg)
-          (assoc game :discovered-world (extend-discovery bg (:discovered-world game) (:world game))))))
+          (assoc game :visibility (extend-visibility bg)) ;; extend visibility by 1 square in all directions
+          (assoc game :discovered-world (extend-discovery (or (:visibility game) (error "!!!!")) 
+                                                          (:discovered-world game) 
+                                                          (:world game))))))
 
 (defn is-square-visible? [^mikera.orculje.engine.Game game loc-or-thing                       ]
   (let [^BitGrid viz (:visibility game)
@@ -197,9 +201,13 @@
 ;; action handling
 
 (defn use-aps 
-  [game thing aps-used]
-  (let [aps-delta (long* (/ (* -100.0 aps-used) (or (? game thing :speed) 100)))]
-    (!+ game thing :aps aps-delta)))
+  [game actor aps-used]
+  (or game (error "no game!?!?"))
+  (or aps-used (error "No APS used?!?"))
+  (or actor (error "no actor!?!?"))
+  (let [aps-delta (long* (/ (* -100.0 aps-used) 
+                            (or (? actor :speed) 100)))]
+    (!+ game actor :aps aps-delta)))
 
 ;; ======================================================
 ;; damage and healing
@@ -439,7 +447,7 @@
 (defn try-bump [game thing target]
   (cond
     (:is-tile target)
-      (message game thing (str (text/verb-phrase game :the thing "run") " into a wall."))
+      (message game thing (str "You are blocked by " (text/verb-phrase game :the target) "."))
     (and (:is-being target) (is-hostile thing target))
       (try-attack game thing target)
     (and (:is-intelligent thing) (:is-door target))
@@ -478,13 +486,13 @@
       (message game hero "Victory! You have escaped with The Philosopher's Stone")
       (message game hero "Truly you are the greatest!"))
     (as-> game game
-      (message game hero "The Philosopher's Stone is not yet in your posession.")
+      (message game hero "The Philosopher's Stone is not yet in your possession.")
       (message game hero "You shall not leave without it!"))))
 
 (defn try-move-dir
   [game thing dir]
   (let [loc (location game thing)
-        dir (if (check (or (:confusion thing) 0) (? thing :IN)) (DIRECTIONS (Rand/r 8)) dir)
+        dir (if (check (or (? game thing :confusion) 0) (? thing :IN)) (DIRECTIONS (Rand/r 8)) dir)
         tloc (loc-add loc dir)
         dz (dir 2)]
     (if (not (== 0 (dir 2)))
