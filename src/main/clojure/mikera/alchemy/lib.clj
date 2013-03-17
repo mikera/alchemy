@@ -556,6 +556,22 @@
                                  (!+ game actor :hps-max boost)
                                  (engine/message game actor
                                    "You feel amazingingly good..."))))})
+    (proclaim "speed gain potion" "base potion" 
+              {:level (Rand/d 2 4) 
+               :on-consume (consume-function [game item actor]
+                             (let [boost (Rand/d 5)]
+                               (as-> game game
+                                 (!+ game actor :speed boost)
+                                 (engine/message game actor
+                                   "You feel faster!"))))})
+    (proclaim "stoneskin potion" "base potion" 
+              {:level (Rand/d 10) 
+               :on-consume (consume-function [game item actor]
+                             (let [boost (Rand/d 2)]
+                               (as-> game game
+                                 (!+ game actor :ARM boost)
+                                 (engine/message game actor
+                                   "You feel your skin toughening..."))))})
     (proclaim "cure poison potion" "base potion" 
               {:level 2 
                :on-consume (consume-function [game item actor]
@@ -565,7 +581,7 @@
                                      (engine/message game actor "You feel much better!"))
                                (engine/message game actor "Hmmm that was quite refreshing.")))})
     (proclaim "cleansing potion" "base potion" 
-              {:level 7 
+              {:level (Rand/d 10) 
                :on-consume (consume-function [game item actor]
                              (if-let [ps (seq (filter :is-effect (contents actor)))]
                                (as-> game game 
@@ -643,17 +659,33 @@
   (-> lib
     (proclaim "base mushroom" "base food" 
               {:char (char 0x2660)
+               :is-mushroom true
                :food-value 10})
+    (proclaim "brown mushroom" "base mushroom"
+              {:level 0
+               :colour-fg (colour 0x806040)}) 
     (proclaim "magic mushroom" "base mushroom" 
-              {:level 1
+              {:level 2
                :is-ingredient true
                :char (char 0x2660)
                :food-value 10
                :modifiers {:colour-fg 
-                             [(modifier :colour-fg (colour (Rand/r 0x1000000)))]}})
+                             [(modifier :colour-fg (colour (Rand/r 0x1000000)))]}
+               :on-consume (consume-function [game item actor]
+                             (as-> game game 
+                                   (engine/message game actor "This mushroom tastes very odd!")
+                                   (engine/add-effect game actor (engine/create game "[:is-effect]"))))})
+    
+    
     (proclaim "slime mould" "base food" 
+              {:level 0
+               :food-value 100})
+    (proclaim "pork pie" "base food" 
               {:level 3
-               :food-value 100})))
+               :food-value 200})
+    (proclaim "dwarven sausage" "base food" 
+              {:level 5
+               :food-value 300})))
 
 ;; ===================================================
 ;; libary definitions - weapons & attacks
@@ -741,6 +773,7 @@
     (proclaim "base being" "base thing" 
                    {:is-mobile true
                     :is-being true
+                    :is-living true
                     :is-blocking true                             
                     :on-death (fn [game thing]
                                 (if-let [l (location game thing)]
@@ -758,7 +791,7 @@
     (proclaim "base creature" "base being"
               {:is-creature true
                :is-hostile true
-               :drop-chance 1.0
+               :drop-chance 0.5
                :drop-type "[:is-item]"
                :on-action engine/monster-action})
     
@@ -789,49 +822,107 @@
                     :is-undead false})
     (proclaim "zombie" "base undead" 
                    {:level 2
-                    :SK 3 :ST 10 :AG 2 :TG 5 :IN 0 :WP 0 :CH 0 :CR 0
+                    :SK 3 :ST 8 :AG 2 :TG 5 :IN 0 :WP 0 :CH 0 :CR 0
                     :hps 10
+                    :speed 80
                     :char \z
                     :colour-fg (colour 0x808080)})
     (proclaim "skeleton" "base undead" 
-                   {:level 4
+                   {:level 5
                     :SK 10 :ST 10 :AG 6 :TG 10 :IN 0 :WP 0 :CH 0 :CR 0
                     :hps 10
                     :char \s
                     :colour-fg (colour 0xE0E0C0)})
     (proclaim "skeleton warrior" "base undead" 
-                   {:level 5
+                   {:level 7
                     :SK 15 :ST 15 :AG 10 :TG 15 :IN 0 :WP 0 :CH 0 :CR 0
                     :hps 20
+                    :speed 150
                     :char \s
                     :colour-fg (colour 0xFFFFFF)})
     (proclaim "wight" "base undead" 
                    {:level 6
-                    :SK 6 :ST 6 :AG 8 :TG 10 :IN 0 :WP 0 :CH 0 :CR 0
+                    :SK 16 :ST 6 :AG 8 :TG 10 :IN 0 :WP 0 :CH 0 :CR 0
                     :hps 12
                     :char \W
                     :colour-fg (colour 0xE0E0C0)
                     :attack (merge ATT_NORMAL {:damage-effect "weakened" :damage-effect-chance 0.3})})
     (proclaim "skeleton champion" "base undead" 
-                   {:level 7
+                   {:level 9
                     :SK 25 :ST 25 :AG 20 :TG 25 :IN 0 :WP 0 :CH 0 :CR 0
-                    :hps 40
+                    :hps 40            
+                    :speed 200
                     :char \S
                     :colour-fg (colour 0xFFFFFF)})
+    (proclaim "spectre" "base undead" 
+                   {:level 10
+                    :SK 25 :ST 25 :AG 20 :TG 25 :IN 0 :WP 0 :CH 0 :CR 0
+                    :hps 20            
+                    :speed 150
+                    :char \S
+                    :colour-fg (colour 0x808080)
+                    :attack (merge ATT_NORMAL {:damage-effect "slowed!" :damage-effect-chance 0.3})})
+    
+    ;; goblinoids
+    (proclaim "base goblinoid" "base creature"
+              {:is-goblinoid true
+               :attack ATT_NORMAL
+               :is-intelligent true})
+    (proclaim "base goblin" "base goblinoid"
+              {:is-goblin true
+               :char \g})
+    (proclaim "small goblin" "base goblin" 
+              {:level 0
+               :SK 5 :ST 3 :AG 8 :TG 3 :IN 5 :WP 3 :CH 5 :CR 2
+               :hps 4
+               :colour-fg (colour 0x20C000)})
+    (proclaim "goblin" "base goblin" 
+              {:level 1
+               :SK 5 :ST 5 :AG 8 :TG 5 :IN 5 :WP 5 :CH 5 :CR 3
+               :hps 6
+               :colour-fg (colour 0x009000)})
+    (proclaim "orc" "base goblin" 
+              {:level 4
+               :SK 6 :ST 9 :AG 6 :TG 8 :IN 4 :WP 8 :CH 3 :CR 4
+               :hps 10
+               :char \o
+               :attack ATT_SWORD
+               :colour-fg (colour 0x009000)})
+    (proclaim "black orc" "orc" 
+              {:level 6
+               :SK 9 :ST 13 :AG 9 :TG 18 :IN 5 :WP 12 :CH 3 :CR 4
+               :hps 20
+               :char \o
+               :colour-fg (colour 0x406040)})
+    (proclaim "orc champion" "base goblin" 
+              {:level 4
+               :SK 16 :ST 19 :AG 16 :TG 18 :IN 4 :WP 8 :CH 3 :CR 4
+               :hps 25
+               :speed 150
+               :char \o
+               :attack ATT_SWORD
+               :colour-fg (colour 0x80C000)})
+    (proclaim "troll" "base goblinoid" 
+              {:level 8
+               :SK 13 :ST 33 :AG 9 :TG 27 :IN 5 :WP 22 :CH 3 :CR 4
+               :hps 50
+               :attack ATT_MACE
+               :char \T
+               :colour-fg (colour 0x507050)})
     
     ;; golems
     (proclaim "base golem" "base creature" 
                    {:SK 15 :ST 23 :AG 8 :TG 30 :IN 0 :WP 16 :CH 0 :CR 0
                     :attack ATT_NORMAL
                     :is-living false
+                    :speed 80
                     :hps 30
                     :char \G
                     :colour-fg (colour 0xC0C0C0)})
     (proclaim "golem" "base golem" 
                    {:level 8})
     (proclaim "immortal golem" "base golem" 
-                   {:char \G
-                    :is-immortal true
+                   {:is-immortal true
                     :level 10
                     :colour-fg (colour 0xFFFFFF)})
     
@@ -846,6 +937,10 @@
                     :colour-fg (colour 0x60C060)})
     (proclaim "grass snake" "base snake"
                    {})
+    (proclaim "white snake" "base snake"
+                   {:level 2
+                    :colour-fg (colour 0x60C060)
+                    :attack (merge ATT_BITE {:damage-effect "confused!" :damage-effect-chance 40})})
     (proclaim "cobra" "base snake"
                    {:SK 4 :ST 3 :AG 10 :TG 7 :IN 4 :WP 9 :CH 8 :CR 3
                     :char \c
@@ -861,9 +956,10 @@
                     :attack (merge ATT_POISON_BITE {:damage-effect "poisoned!" :damage-effect-chance 40})
                     :colour-fg (colour 0xD0A060)})
     (proclaim "wyrm" "base snake"
-                   {:SK 26 :ST 15 :AG 20 :TG 37 :IN 14 :WP 29 :CH 12 :CR 8
+                   {:SK 16 :ST 15 :AG 20 :TG 37 :IN 14 :WP 29 :CH 12 :CR 8
                     :char \W
                     :freq 1.0
+                    :speed 200
                     :hps 50
                     :level 10
                     :attack (merge ATT_POISON_BITE {:damage-effect "poisoned!!" :damage-effect-chance 40})
@@ -888,7 +984,7 @@
                                       (! hero :char \%)
                                       (! hero :is-corpse true)
                                       (assoc game :game-over true)))
-                    :hps 15
+                    :hps (+ 10 (* (Rand/d 3) (Rand/d 5)))
                     :attack ATT_NORMAL
                     :grammatical-person :second
                     :char \@

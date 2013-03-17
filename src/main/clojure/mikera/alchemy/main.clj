@@ -177,7 +177,7 @@
       (.setForeground jc ^Color TEXT_COLOUR)
       (let [effs (filter :is-effect (contents hero))
             eff-string (apply str (distinct (map #(str (text/capitalise (:name %)) "  ") effs)))]
-        (gui/draw jc 1 (+ sy 1) (text/truncate-with-dots eff-string (- w 2)))))))
+        (gui/draw jc 1 (+ sy 2) (text/truncate-with-dots eff-string (- w 2)))))))
 
 (defn redraw-screen 
   "Redraw the main playing screen"
@@ -418,7 +418,12 @@
         inv (vec (lib/all-library-things game 
                    (fn [p] (and (:is-potion p) (:is-identified p) (:is-recipe-known p)))))]
     (item-select-handler state "Create a potion:" 
-                      (vec (map (partial engine/base-name game) inv))
+                      (vec (map 
+                             (fn [p] 
+                               (str
+                                 (engine/base-name game p)
+                                 (if (engine/has-ingredients? game hero p)
+                                   " [OK]" " [ingred. missing]"))) inv))
                       0
                       (fn [n] 
                         (swap! (:game state) world/handle-alchemy (inv n))
@@ -445,7 +450,7 @@
                              (main-handler state)))
       :else 
         (do 
-          (swap! (:game state) world/message "You need to find an analysis lab to analyse potions.")
+          (swap! (:game state) world/message "You need to find an analysis lab to analyse items.")
           (main-handler state))))) 
 
 (defn choose-drop [state]

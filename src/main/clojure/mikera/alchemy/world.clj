@@ -4,6 +4,7 @@
   (:require [mikera.cljutils.find :as find]) 
   (:use [mikera.cljutils.error]) 
   (:require [mikera.alchemy.dungeon :as dungeon]) 
+  (:require [mikera.orculje.mapmaker :as mm]) 
   (:import [mikera.engine PersistentTreeGrid]) 
   (:import [mikera.util Rand]) 
   (:use mikera.orculje.core))
@@ -20,6 +21,7 @@
 (def BLANK_TILE (thing lib/BLANK_TILE_PROPS))
 (def UNSEEN_TILE (thing lib/UNSEEN_TILE_PROPS))
 
+(def WANDERING_MONSTER_RATE 10000) ;; number of ticks per monster add
 
 ;; ======================================================
 ;; key external functions (called by main namespace)
@@ -81,6 +83,24 @@
         (recur game (next obs)))
       game)))
 
+(defn maybe-add-wandering-monsters 
+  ([game aps-debt]
+    (let [num (Rand/po aps-debt WANDERING_MONSTER_RATE)
+          lmin (:min (:volume game))
+          lmax (:max (:volume game))]
+      (reduce
+        (fn [game _]
+          (let [l (mm/find-loc lmin lmax #(and 
+                                            (not (get-blocking game %))
+                                            (not (engine/is-square-visible? game %))))]
+            (if l
+              (let [m (lib/create game "[:is-creature]" (:max-level game))]
+                ;; (println (str "Trying to place: " (:name m)))
+                (dungeon/maybe-place-thing game l l m))
+              game)))
+        game
+        (range num)))))
+
 (defn end-turn 
   "Called to update the game after every player turn"
   ([game]
@@ -90,6 +110,7 @@
           turn (:turn game)]
       ;; (println (str "turn " turn " ending with aps used: " aps-debt))
       (as-> game game
+            (maybe-add-wandering-monsters game aps-debt)
             (monster-turn game aps-debt)
             (engine/update-visibility game)
             (assoc game :turn (inc turn))

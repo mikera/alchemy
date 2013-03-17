@@ -12,9 +12,10 @@
      ~@(map (fn [b] `(and ~sym ~b)) (butlast body))
      ~(last body)))
 
-(defn maybe-place-thing [game l1 l2 t]
-  (or (mm/place-thing game l1 l2 t)
-      game))
+(defn maybe-place-thing 
+  ([game l1 l2 t]
+    (or (mm/place-thing game l1 l2 t)
+        game)))
 
 (defn generate-1
   "Main dungeon generation algorithm"
