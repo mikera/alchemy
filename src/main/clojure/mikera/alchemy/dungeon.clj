@@ -225,9 +225,11 @@
         [x2 y2 z] lmax
         w (long (inc (- x2 x1)))
         h (long (inc (- y2 y1)))
+
         split-dir (if (Rand/chance 0.8) 
                     (if (> w h) 0 1)
                     (if (Rand/chance (double (/ w (+ w h)))) 0 1)) ;; prefer split on longer dimension....
+        conw (if (== 0 split-dir) h w) ;; width of connecting wall
         ]
     (if (or (< w MIN_ZONE_SIZE)
             (< h MIN_ZONE_SIZE)
@@ -246,7 +248,8 @@
               new-con2 (if (== split-dir 0)
                         (loc (+ x1 split-point) (+ y1 (Rand/r h)) z)
                         (loc (+ x1 (Rand/r w)) (+ y1 split-point) z))
-              new-cons (if (and (Rand/chance 0.4) (< 1 (loc-dist-manhattan new-con new-con2)))
+              new-cons (if (and (> (* conw (Rand/nextDouble)) 10) 
+                                (< 1 (loc-dist-manhattan new-con new-con2)))
                          [new-con new-con2]
                          [new-con])] 
           (and-as-> game game
