@@ -255,9 +255,11 @@
   ([game target amount type]
     (let [hps (:hps target)
           dam amount]
-      (if (>= dam hps)
-        (die game target)
-        (! game target :hps (- hps amount))))))
+      (as-> game game 
+        (! game target :hps (- hps amount))
+        (if (>= dam hps)
+          (die game target)
+          game)))))
 
 (defn heal [game target amount]
   (if (:is-undead target)

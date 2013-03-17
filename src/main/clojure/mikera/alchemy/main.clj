@@ -203,13 +203,14 @@
    ["c" "Use an alchemy workbench to craft potions"]
    ["d" "Drop an item"]
    ["e" "Eat a food item"]
-   ["i" "Inventory (select an item to examine it)"]
+   ["i" "Examine your inventory"]
    ["l" "Look around (movement keys to move cursor)"]
    ["m" "Show recent messages"]
    ["o" "Open / close a door, box or mechanism"]
-   ["p" "Pick upan item"]
+   ["p" "Pick up an item"]
    ["q" "Quaff potion"]
    ["t" "Throw something"]
+   ["R" "Restart the game"]
   ])
 
 (defn show-commands [state]

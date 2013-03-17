@@ -239,6 +239,6 @@
     (engine/clear-messages game)
     (cond
       :else (do 
-              (println (str "Turn " (:turn game) " unhandled command [" k "]")) 
+              ;; (println (str "Turn " (:turn game) " unhandled command [" k "]")) 
               game))    
     (end-turn game)))

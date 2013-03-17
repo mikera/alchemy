@@ -26,7 +26,7 @@
                        :proper-name "unexplored space"
                        :is-unseen-tile true
                        :is-tile true
-                       :char \space
+                       :char (char 0x2591) 
                        :colour-fg (colour 0x808080)
                        :colour-bg (colour 0x404040)
                        :z-order (long -100)})
@@ -850,6 +850,7 @@
                     :attack ATT_NORMAL
                     :speed 100
                     :aps 0
+                    :ARM 0 
                     :z-order 75
                     :SK 5 :ST 5 :AG 5 :TG 5 :IN 5 :WP 5 :CH 5 :CR 5})
     (proclaim "base creature" "base being"
@@ -1070,6 +1071,7 @@
                                       (! hero :is-corpse true)
                                       (assoc game :game-over true)))
                     :hps (+ 10 (* (Rand/d 4) (Rand/d 5)))
+                    :ARM (Rand/d 3)
                     :attack ATT_NORMAL
                     :grammatical-person :second
                     :char \@
