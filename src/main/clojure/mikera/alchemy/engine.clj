@@ -313,10 +313,11 @@
         dam (if critical? (+ dam (* ast (Rand/nextDouble))) dam) 
         dam (long* dam (/ dam (+ dam arm)))
         dam-str (cond 
-                  (>= dam (:hps target)) 
-                    (str " and " (text/verb-phrase game {:person (text/get-person actor)} "kill") " " (text/pronoun target))
                   (> dam 0) 
-                    (str " for " dam " damage")
+                    (str " for " dam " damage"
+                         (if (>= dam (:hps target)) 
+                           (str " and " (text/verb-phrase game {:person (text/get-person actor)} "kill") " " (text/pronoun target))
+                           ""))
                   :else 
                     (str " but " (text/verb-phrase game {:person (text/get-person actor)} "cause") " no damage"))]
     (as-> game game

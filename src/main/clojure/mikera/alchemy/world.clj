@@ -48,9 +48,10 @@
         (as-> game game
           (add-thing game (engine/hero game) (lib/create game "[:is-ingredient]"))
           (add-thing game (engine/hero game) (lib/create game "[:is-potion]"))
-          (engine/identify game (:last-added-id game))))
+          ))
       game
       (range (Rand/d 5))) 
+    (engine/identify-all game identity (contents (engine/hero game)))
     
     ;; testing state
     ;; (add-thing game (engine/hero game) (lib/create game "invincibility")) 

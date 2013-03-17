@@ -14,7 +14,7 @@
 
 (defn maybe-place-thing 
   ([game l1 l2 t]
-    (or (mm/place-thing game l1 l2 t)
+    (or (and t (mm/place-thing game l1 l2 t))
         game)))
 
 (defn generate-1

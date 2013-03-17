@@ -57,7 +57,7 @@
       (if ts
         (let [nt (first ts)
               nz (long (:z-order nt 0))]
-          (if (and (> nz z-order) (:is-visible nt))
+          (if (and (> nz z-order) (not (:is-invisible nt)))                
             (recur nz nt (next ts))
             (recur z-order ct (next ts))))
         ct))))
@@ -371,9 +371,9 @@
         cy (int (quot gh 2)) 
         ^mikera.engine.BitGrid viz (or (:visibility game) (error "No visibility defined!"))
         ^mikera.engine.PersistentTreeGrid disc (or (:discovered-world game) (error "No discovered world?!?")) 
-        visible? (.get viz cx cy (int z))
+        visible? (.get viz (int x) (int y) (int z))
         dthing (if visible?
-                 (displayable-thing game cx cy (int z))
+                 (displayable-thing game (int x) (int y) (int z))
                  (or (.get disc x y z) world/UNSEEN_TILE))
        ]
     (redraw-world state loc)
