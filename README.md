@@ -19,7 +19,7 @@ Alchemy requires Maven to build (though you can probably get a simple project.cl
 
 The following command should produce a working build:
 
-    mvn assembly:single
+    mvn install assembly:single
 
 This will create an executable jar file (in the /target directory) that can be run with a command like:
 
