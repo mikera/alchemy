@@ -91,14 +91,13 @@
           lmax (:max (:volume game))]
       (reduce
         (fn [game _]
-          (let [l (mm/find-loc lmin lmax #(and 
-                                            (not (get-blocking game %))
-                                            (not (engine/is-square-visible? game %))))]
-            (if l
-              (let [m (lib/create game "[:is-creature]" (:max-level game))]
-                ;; (println (str "Trying to place: " (:name m)))
+          (if-let [l (mm/find-loc lmin lmax 
+                               #(and 
+                                  (not (get-blocking game %))
+                                  (not (engine/is-square-visible? game %))))]
+            (let [m (lib/create game "[:is-creature]" (:max-level game))]
                 (dungeon/maybe-place-thing game l l m))
-              game)))
+            game))
         game
         (range num)))))
 

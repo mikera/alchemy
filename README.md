@@ -12,6 +12,14 @@ by Mike Anderson
     is descend and grab the stone before your rivals catch the scent. 
     
     What could possibly go wrong?
+    
+## Download
+
+If you just want to play the game, you can get the compiled .jar file here:
+
+    http://dl.dropbox.com/u/6465582/alchemy.jar
+    
+You should be able to run the file either by double clicking it or using the command `java -jar alchemy.jar`. You will need to have Java 1.6 or above installed.
 
 ## Build instructions
 
