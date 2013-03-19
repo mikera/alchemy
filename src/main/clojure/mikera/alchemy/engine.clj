@@ -434,9 +434,10 @@
 
 (defn try-open [game actor door]
   (as-> game game
+    (use-aps game actor 100)
     (if (? door :is-locked)
       (message game actor (str (text/verb-phrase game :the door) " is locked."))
-      ((:on-open door) game door actor))    ))
+      ((:on-open door) game door actor))))
 
 (defn try-consume [game actor item]
   (as-> game game
@@ -570,10 +571,10 @@
               game (if same-level? (! game m :target-location hloc) game)]
           (or 
             (consider-move-dir game m dir)
-            (consider-move-dir game m (DIRECTIONS 8)) 
-            (consider-move-dir game m (DIRECTIONS 9))
             (consider-move-dir game m (DIRECTIONS (mod (inc di) 8)))
             (consider-move-dir game m (DIRECTIONS (mod (dec di) 8)))
+            (consider-move-dir game m (DIRECTIONS 8)) 
+            (consider-move-dir game m (DIRECTIONS 9))
             (consider-move-dir game m (DIRECTIONS (Rand/r 8)))
             (as-> game game
               (! game m :target-location nil)
