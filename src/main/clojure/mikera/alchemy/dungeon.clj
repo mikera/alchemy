@@ -71,15 +71,25 @@
       (range (Rand/d 12)))))
 
 (defn decorate-lab [game room]
-  (let [lmin (:lmin room)
-        lmax (:lmax room)]
+  (let [lmin (:lmin room) lmax (:lmax room)]
     (and-as-> game game
+      (maybe-place-thing game lmin lmax (lib/create game "[:is-apparatus]"))
       (reduce 
         (fn [game _]
           (maybe-place-thing game lmin lmax (lib/create game "[:is-potion]")))
         game
-        (range (Rand/d 4)))
-      (maybe-place-thing game lmin lmax (lib/create game "[:is-apparatus]")))))
+        (range (Rand/d 4))))))
+
+(defn decorate-fountain-room [game room]
+  (let [lmin (:lmin room) lmax (:lmax room)]
+    (and-as-> game game
+      (maybe-place-thing game lmin lmax (lib/create game "[:is-fountain]"))
+      (mm/fill-block game lmin lmax (lib/create game "moss floor"))
+      (reduce 
+        (fn [game _]
+          (maybe-place-thing game lmin lmax (lib/create game "[:is-potion]")))
+        game
+        (range (Rand/d 4))))))
 
 (defn decorate-normal-room [game room]
   (let [lmin (:lmin room)
@@ -96,6 +106,8 @@
         [x2 y2 z] lmax]
     (cond 
       (Rand/chance 0.3)
+        (decorate-fountain-room game room)
+      (Rand/chance 0.3)
         (let [pillar (Rand/pick ["wall" "pillar"])]
           (as-> game game
             (set-tile game (loc (inc x1) (inc y1) z) (lib/create game pillar))
@@ -107,7 +119,7 @@
                        (loc (inc x1) (inc y1) z)
                        (loc (dec x2) (dec y2) z)
                        (lib/create game (Rand/pick ["murky pool" "shallow pool" "deep pool" "magma pool"]))))))
-;
+
 (defn decorate-room [game room]
   (and-as-> game game 
     (cond
@@ -119,7 +131,7 @@
         (decorate-store-room game room (Rand/pick ["[:is-food]" "[:is-potion]" "[:is-mushroom]" "[:is-ingredient]" "[:is-herb]"]))
       (Rand/chance 0.07)
         (decorate-lab game room)
-      (Rand/chance 0.1)
+      (Rand/chance 0.2)
         (decorate-designer-room game room)
       :else
         ;; an empty room

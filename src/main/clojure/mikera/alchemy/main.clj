@@ -393,7 +393,7 @@
     (.setBackground jc ^Color (colour 0x200000))
     (gui/draw jc 1 0 msg)
     (gui/draw jc 3 1 
-              (mikera.orculje.text/capitalise (engine/a-name game dthing))) 
+              (mikera.orculje.text/capitalise (engine/base-name game dthing))) 
     (draw-crosshairs jc cx cy)
     (reset! (:event-handler state)
 	          (fn [^String k]

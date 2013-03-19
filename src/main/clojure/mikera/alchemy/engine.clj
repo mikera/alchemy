@@ -311,7 +311,7 @@
 
 (defn hit [game actor target weapon critical?]
   (let [ast (* (? actor :ST) (? weapon :AST))
-        hit-verb "hit"
+        hit-verb (or (:hit-verb weapon) "hit")
         hit-verb (if critical? (str "skillfully " hit-verb) hit-verb)
         dam-type (or (:damage-type weapon) :normal)
         arm (+ (* 0.5 (or (? target :TG) 0)) (or (? target :ARM) 0))
