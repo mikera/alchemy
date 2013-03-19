@@ -199,7 +199,7 @@
 ;; command
 ;
 (def COMMANDS
-  [["Direction keys = move around map / attack / open doors"]
+  [["Direction keys" "Move around map / attack / open doors"]
    []
    ["a" "Use an analysis lab to identify items and their composition"]
    ["c" "Use an alchemy workbench to craft potions"]
@@ -214,6 +214,8 @@
    ["t" "Throw something"]
    ["<" "Go up stairs / ramp"]
    [">" "Go down stairs/ramp"]
+   ["," "Quick pickup (picks up first available item on floor)"]
+   ["." "Wait a short time at this location"]
    []
    ["R" "Restart the game"]
    ["?" "Show this screen (command help)"]
@@ -521,6 +523,16 @@
                         (swap! (:game state) world/handle-pickup (inv n))
                         (main-handler state)))))) 
 
+(defn quick-pickup [state]
+  (let [game @(:game state)
+        inv (vec (filter :is-item (get-things game (engine/hero-location game))))]
+    (cond 
+      (== 0 (count inv))
+        (swap! (:game state) world/message "There is nothing here to pick up.")
+      :else (do 
+              (swap! (:game state) world/handle-pickup (inv 0))
+              (main-handler state))))) 
+
 (defn choose-throw-target [state missile]
   (let [game @(:game state)]
      (map-select-handler state 
@@ -619,9 +631,10 @@
           (= "c" k) (choose-alchemy state)
           (= "d" k) (choose-drop state)
           (= "e" k) (choose-eat state)
+          (= "p" k) (choose-quaff state)
           (= "q" k) (choose-quaff state)
           (= "o" k) (choose-open state)
-          (.contains ",p" k) (choose-pickup state)
+          (= "," k) (quick-pickup state)
           (= "t" k) (choose-throw state)
           
           :else
