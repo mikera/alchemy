@@ -197,9 +197,11 @@
 
 ;; ========================================================
 ;; command
-
+;
 (def COMMANDS
-  [["a" "Use an analysis lab to identify items and their composition"]
+  [["Direction keys = move around map / attack / open doors"]
+   []
+   ["a" "Use an analysis lab to identify items and their composition"]
    ["c" "Use an alchemy workbench to craft potions"]
    ["d" "Drop an item"]
    ["e" "Eat a food item"]
@@ -210,7 +212,11 @@
    ["p" "Pick up an item"]
    ["q" "Quaff potion"]
    ["t" "Throw something"]
+   ["<" "Go up stairs / ramp"]
+   [">" "Go down stairs/ramp"]
+   []
    ["R" "Restart the game"]
+   ["?" "Show this screen (command help)"]
   ])
 
 (defn show-commands [state]
@@ -222,7 +228,8 @@
     (.setBackground jc ^Color (colour 0x002010))   
     (gui/draw jc 1 0 "Alchemy help: commands")
     (dotimes [i (count COMMANDS)]
-      (gui/draw jc 3 (+ 2 i) (str ((COMMANDS i) 0) "  =  " ((COMMANDS i) 1))))
+      (when (seq (COMMANDS i))
+        (gui/draw jc 3 (+ 2 i) (str ((COMMANDS i) 0) "  =  " ((COMMANDS i) 1)))))
 
     (reset! (:event-handler state)
 	          (fn [^String k]
@@ -656,8 +663,8 @@
       (gui/add-input-binding comp (gui/keystroke k) (make-input-action state (str k))))
     (doseq [[^KeyEvent ke k] {KeyEvent/VK_LEFT "4"
                               KeyEvent/VK_RIGHT "6"
-                              KeyEvent/VK_UP "2"
-                              KeyEvent/VK_DOWN "8"
+                              KeyEvent/VK_UP "8";
+                              KeyEvent/VK_DOWN "2"
                               KeyEvent/VK_ESCAPE "Q"}]
       (gui/add-input-binding comp (gui/keystroke-from-keyevent ke) (make-input-action state (str k))))))
 
