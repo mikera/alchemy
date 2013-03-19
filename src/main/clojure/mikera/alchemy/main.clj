@@ -304,15 +304,15 @@
 ;; direction selection
 
 (def move-dir-map
-  {"1" (loc -1 -1 0)
-   "2" (loc 0 -1 0)
-   "3" (loc 1 -1 0)
+  {"1" (loc -1 1 0)
+   "2" (loc 0 1 0)
+   "3" (loc 1 1 0)
    "4" (loc -1 0 0)
    "5" (loc 0 0 0)
    "6" (loc 1 0 0)
-   "7" (loc -1 1 0)
-   "8" (loc 0 1 0)
-   "9" (loc 1 1 0)
+   "7" (loc -1 -1 0)
+   "8" (loc 0 -1 0)
+   "9" (loc 1 -1 0)
    "<" (loc 0 0 1)
    ">" (loc 0 0 -1)})
 
