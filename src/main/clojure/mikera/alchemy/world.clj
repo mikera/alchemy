@@ -34,7 +34,7 @@
     (dungeon/generate game)
     
     ;; special data structures
-    (assoc game :functions {:is-identified? engine/is-identified?
+    (assoc game :functions {:is-identified? mikera.alchemy.engine/test-identified?
                             :create lib/create})
     (assoc game :discovered-world (PersistentTreeGrid.))
     

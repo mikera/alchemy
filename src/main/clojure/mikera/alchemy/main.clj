@@ -444,7 +444,7 @@
   (let [game @(:game state)
         hero (engine/hero game)
         inv (vec (filter 
-                   (fn [p] (and (:is-item p) (not (engine/is-identified? game p))))
+                   (fn [p] (and (:is-item p) (not (is-identified? game p))))
                    (contents hero)))]
     (cond
       (== 0 (count inv))

@@ -198,7 +198,7 @@
     game 
     things))
 
-(defn is-identified? [game thing]
+(defn test-identified? [game thing]
   (or (:is-identified thing)
       (:is-identified ((:objects (:lib game)) (:name thing)))))
 
