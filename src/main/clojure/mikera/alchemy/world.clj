@@ -58,6 +58,7 @@
 
     ;; final prep
     (engine/message game (engine/hero game) "Welcome to the dungeon, Alchemist! Seek the Philosopher's Stone!")
+    (engine/message game (engine/hero game) "Press ? to show available key commands")
     (engine/update-visibility game)))
 
 (defn monster-turn [game aps-added]

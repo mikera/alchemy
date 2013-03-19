@@ -238,8 +238,12 @@
       (add-thing game target (create game effect)))))
 
 (defn transform [game target type]
-  (let [type (if (string? type) (create game type) type)]
-    (merge-thing game target type)))
+  (if-let [t (if (string? type) (create game type) type)]
+    (do 
+      ;;(println (str "target" (into {} target)))
+      ;;(println (str "type" (into {} t)))
+      (merge-thing game target t))
+    (error "Can't transform into: " type)))
 
 (defn die 
   ([game target]

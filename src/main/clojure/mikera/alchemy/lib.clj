@@ -81,8 +81,7 @@
        :is-visible true
        :z-order 0}) 
     (proclaim "base thing" "base object"
-            {:id nil
-             :is-thing true})))
+            {:is-thing true})))
 
 ;; ===================================================
 ;; library definitions - tiles
@@ -108,6 +107,8 @@
               {:colour-fg (colour 0x606060)})
     (proclaim "cave floor" "base floor" 
               {:colour-fg (colour 0x604020)})
+    (proclaim "moss floor" "base floor" 
+              {:colour-fg (colour 0x106000)})
     (proclaim "underground stream" "base floor" 
               {:char (char 0x2248)
                :colour-fg (colour 0x0030FF)})
@@ -414,21 +415,44 @@
                                  :is-view-blocking false}})))
 
 
+(defn define-decorations [lib]
+  (-> lib 
+    (proclaim "base decoration" "base scenery" 
+              {:is-decoration true})
+    (proclaim "torture rack" "base decoration" 
+              {:char (char 0x04C1)
+               :colour-fg (colour 0xC0C0C0)})
+    (proclaim "fountain of healing" "base decoration" 
+              {:char (char 0x046A)
+               :colour-fg (colour 0x00FFFF)
+               :heal-amount-max 10
+               :on-use (fn [game app actor]
+                         (as-> game game
+                           (engine/message game actor (str "You feel refreshed by the healing waters!"))
+                           (engine/heal game actor (Rand/d (int (:heal-amount-max app))))
+                           (if (Rand/chance 0.1)
+                             (as-> game game
+                               (engine/message game actor (str "The fountain dries up."))
+                               (engine/transform game app "dry fountain of healing"))
+                             game)))})
+    (proclaim "dry fountain of healing" "base decoration" 
+              {:char (char 0x046A)
+               :colour-fg (colour 0xC0C0C0)
+               :on-use (fn [game app actor]
+                         (engine/message game actor "Sadly this healing fountain is all dried up..."))})))
+
 (defn define-apparatus [lib]
   (-> lib
     (proclaim "base apparatus" "base scenery" 
               {:is-apparatus true
                :on-use (fn [game app actor]
                          (engine/message game actor (str "You don't know how to use " (the-name game app) ".")))})
-    (proclaim "torture rack" "base apparatus" 
-              {:char (char 0x04C1)
-               :colour-fg (colour 0xC0C0C0)})
+    
     (proclaim "alchemy workbench" "base apparatus" 
               {:char (char 0x046C)
                :colour-fg (colour 0xFFFF00)
                :on-use (fn [game app actor]
                          (engine/message game actor (str "Press [c] to use " (the-name game app) ".")))})
-    
     (proclaim "analysis lab" "base apparatus" 
               {:char (char 0x0468)
                :colour-fg (colour 0x00FFFF)
@@ -475,6 +499,7 @@
   (-> lib
     (define-base-scenery)
     (define-apparatus)
+    (define-decorations)
     (define-stairs)
     (define-doors)))
 

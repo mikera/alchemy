@@ -733,6 +733,6 @@
 (defmacro go [& body]
   `(dog
      (reset! (:game ~'s) 
-       (as-> game# ~'game
+       (as-> ~'game ~'game
              ~@body))
      (main-handler ~'s)))
