@@ -511,7 +511,9 @@
         inv (vec (filter :is-item (get-things game (engine/hero-location game))))]
     (cond 
       (== 0 (count inv))
-        (swap! (:game state) world/message "There is nothing here to pick up.")
+        (do
+          (swap! (:game state) world/message "There is nothing here to pick up.")
+          (main-handler state))
       (== 1 (count inv))
         (do 
           (swap! (:game state) world/handle-pickup (inv 0))
@@ -631,7 +633,7 @@
           (= "c" k) (choose-alchemy state)
           (= "d" k) (choose-drop state)
           (= "e" k) (choose-eat state)
-          (= "p" k) (choose-quaff state)
+          (= "p" k) (choose-pickup state)
           (= "q" k) (choose-quaff state)
           (= "o" k) (choose-open state)
           (= "," k) (quick-pickup state)

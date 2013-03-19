@@ -328,18 +328,18 @@
   ([lib]
     (reduce (fn [lib stat] (proclaim-stat-effects lib stat)) lib (keys MAIN_STATS)))
   ([lib stat]
-    (let [BOOST_EFFECT (Rand/d 5)
-          statname (or (:name (MAIN_STATS stat)) (error "No name for stat " stat))]
+    (let [statname (or (:name (MAIN_STATS stat)) (error "No name for stat " stat))]
       (-> lib 
         (proclaim (str statname " boost") "base temporary effect"
                   {:level (Rand/d 10)
-                   :lifetime (+ 3000 (* 1000 (Rand/r 5)))
-                   :parent-modifiers [(modifier stat (+ value BOOST_EFFECT))]}
+                   :lifetime (+ 2000 (* 1000 (Rand/r 5)))
+                   :parent-modifiers [(let [BOOST_EFFECT (Rand/d 3 6)]
+                                        (modifier stat (+ value BOOST_EFFECT)))]}
                   )
         (proclaim (str statname " drain") "base temporary effect"
                   {:level (Rand/d 10)
                    :lifetime (+ 5000 (* 2000 (Rand/r 5)))
-                   :parent-modifiers [(modifier stat (long* value 0.8))]}
+                   :parent-modifiers [(modifier stat (long* value 0.7))]}
                   )))))
 
 (defn define-effects [lib]
@@ -517,26 +517,21 @@
   (when-not (and (vector? binds) (every? symbol? binds)) (error "consume function requires [game actor item] bindings")) 
   `(fn [~game ~item ~actor ]
      (as-> ~game ~game
-       (remove-thing ~game ~item)
+       (remove-thing ~game ~item 1)
        ~@body
        (engine/identify ~game ~item)
        )))
 
-
 (defn potion-effect-function [effect-name]
-  (fn [game potion target]
-    (as-> game game
-          (remove-thing game potion)
-          (engine/add-effect game target effect-name)
-          (engine/identify game potion)
-)))
-
+  (consume-function [game potion target]
+    (engine/add-effect game target effect-name)))
 
 (defn define-base-item [lib]
   (-> lib
     (proclaim "base item" "base thing" 
               {:is-item true
                :char (char \%)
+               :can-stack? default-can-stack?
                :z-order 20})
     (proclaim "base ingredient" "base item" 
               {:is-ingredient true
@@ -561,6 +556,7 @@
     (proclaim "base food" "base ingredient" 
               {:is-food true
                :is-ingredient false
+               :is-identified true   ;; don't need to identify food....
                :char (char 0x2663)
                :food-value 100
                :on-consume  (consume-function [game item actor]
@@ -613,7 +609,8 @@
         (proclaim (str "gain " statname " potion") "base stat potion" 
               {:level (Rand/d 9)
                :on-consume  (consume-function [game item actor]
-                              (!+ actor stat (Rand/d 4)) (engine/message game actor (str "You feel you have gained in " statname "!")))})
+                              (!+ actor stat (Rand/d 4)) 
+                              (engine/message game actor (str "You feel you have gained in " statname "!")))})
         (proclaim (str statname " boost potion") "base stat potion" 
               {:level (Rand/d 9)
                :on-consume (potion-effect-function (str statname " boost"))})))))

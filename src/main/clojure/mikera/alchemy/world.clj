@@ -184,7 +184,7 @@
   (let [h (or (engine/hero game) (error "no here?!?"))]
     (as-> game game
       (engine/clear-messages game)
-      (remove-thing game item) 
+      (remove-thing game item 1) 
       (if (engine/check (? game h :IN) 5)
         (as-> game game 
           (engine/identify game item)

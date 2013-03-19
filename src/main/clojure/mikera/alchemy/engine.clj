@@ -40,7 +40,7 @@
   (text/a-name game thing))
 
 (defn base-name [game thing]
-  (text/base-name game thing))
+  (text/num-name game thing))
 
 (defn check 
   "Random skill check"
@@ -63,7 +63,7 @@
                 (:name thing-or-name))
         it (find/find-first #(= tname (:name %)) (contents hero))]
     (if it
-      (remove-thing game it)
+      (remove-thing game it 1)
       game)))
 
 (defn remove-items [game hero things-or-names]
@@ -392,8 +392,8 @@
   (let [tloc (location game target-or-loc)
         throw-fn (or (:on-thrown missile) default-throw)] 
     (as-> game game
-      (remove-thing game missile)
-      (throw-fn game missile actor tloc)
+      (remove-thing game missile 1)
+      (throw-fn game (merge missile {:number 1 :id nil}) actor tloc)
       (use-aps game actor 100))))
 
 ;; ======================================================
