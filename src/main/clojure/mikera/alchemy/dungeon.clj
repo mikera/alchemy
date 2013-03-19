@@ -59,8 +59,9 @@
   (let [lmin (:lmin room)
         lmax (:lmax room)]
     (and-as-> game game
-      (if (Rand/chance 0.3) (maybe-place-thing game lmin lmax (lib/create game "[:is-creature]" (- (lmin 2)))) game)        
-      (if (Rand/chance 0.5) (maybe-place-thing game lmin lmax (lib/create game "[:is-potion]" (- (lmin 2)))) game)
+      (if (Rand/chance 0.3) (maybe-place-thing game lmin lmax (lib/create game "[:is-decoration]" (- (lmin 2)))) game)        
+      (if (Rand/chance 0.5) (maybe-place-thing game lmin lmax (lib/create game "[:is-creature]" (- (lmin 2)))) game)        
+      (if (Rand/chance 0.5) (maybe-place-thing game lmin lmax (lib/create game "[:is-item]" (- (lmin 2)))) game)
       )))
 
 (defn decorate-designer-room [game room]
@@ -297,16 +298,19 @@
             (error "Can't place exit staircase!!"))
           (assoc game :start-location (location game (:last-added-id game))))))
 
+
+(def DUNGEON_MIN (loc -35 -25 -11))
+(def DUNGEON_MAX (loc 35 25 -1))
+(def OBJECTIVE_LEVEL -10)
+
 (defn place-philosophers-stone [game lmin lmax]
   (let [[x1 y1 z1] lmin
         [x2 y2 z2] lmax]
     (as-> game game
           (or 
-            (or-loop [1000] (mm/place-thing game lmin (loc x2 y2 z1) (lib/create game "The Philosopher's Stone")))
+            (or-loop [1000] (mm/place-thing game (loc x1 y1 OBJECTIVE_LEVEL) (loc x2 y2 OBJECTIVE_LEVEL) (lib/create game "The Philosopher's Stone")))
             (error "Can't place philosopher's stone!!")))))
 
-(def DUNGEON_MIN (loc -35 -25 -10))
-(def DUNGEON_MAX (loc 35 25 -1))
 
 (defn generate-dungeon 
   "Attempts to generate dungeon. May return nil on failure" 

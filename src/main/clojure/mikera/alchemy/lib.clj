@@ -362,7 +362,7 @@
                :is-view-blocking false
                :is-blocking true
                :char (char \#)
-               :hps 30
+               :hps 10
                :z-order 60})))
 
 (defn define-doors [lib]
@@ -428,6 +428,16 @@
     (proclaim "torture rack" "base decoration" 
               {:char (char 0x04C1)
                :colour-fg (colour 0xC0C0C0)})
+    (proclaim "old gravestone" "base decoration" 
+              {:char (char 0x043F)
+               :colour-fg (colour 0xA0A0A0)})
+    (proclaim "large candelabra" "base decoration" 
+              {:char (char 0x03A8)
+               :colour-fg (colour 0xFFFF00)})
+    (proclaim "strange rune" "base decoration" 
+              {:char (char 0x06DE)
+               :is-blocking false
+               :colour-fg (colour 0x8000FF)})
     (proclaim "fountain of healing" "base decoration" 
               {:char (char 0x046A)
                :is-fountain true
@@ -437,7 +447,7 @@
                          (as-> game game
                            (engine/message game actor (str "You feel refreshed by the healing waters!"))
                            (engine/heal game actor (Rand/d (int (:heal-amount-max app))))
-                           (if (Rand/chance 0.1)
+                           (if (Rand/chance 0.15)
                              (as-> game game
                                (engine/message game actor (str "The fountain dries up."))
                                (engine/transform game app "dry fountain"))
@@ -1101,7 +1111,7 @@
                     :attack (merge ATT_POISON_BITE {:damage-effect "poisoned!!" :damage-effect-chance 40})
                     :colour-fg (colour 0xF0A060)})
     (proclaim "dragon" "base snake"
-                   {:level 10
+                   {:level 11
                     :SK 26 :ST 25 :AG 20 :TG 70 :IN 24 :WP 49 :CH 26 :CR 30
                     :char (char 0x1E0A)
                     :freq 0.1
@@ -1129,8 +1139,8 @@
                                       (! hero :char \%)
                                       (! hero :is-corpse true)
                                       (assoc game :game-over true)))
-                    :hps (+ 10 (* (Rand/d 4) (Rand/d 5)))
-                    :ARM (Rand/d 3)
+                    :hps (+ 10 (* (Rand/d 5) (Rand/d 5)))
+                    :ARM (Rand/r 4)
                     :attack ATT_NORMAL
                     :grammatical-person :second
                     :char \@

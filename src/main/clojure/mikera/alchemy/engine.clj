@@ -450,7 +450,7 @@
   (as-> game game
     (if-let [on-use (? thing :on-use)]
       (on-use game thing actor)
-      (message game actor (str "You have no idea what to do with " (the-name game thing) ".")))))
+      (message game actor (str "You are unable to make use of " (the-name game thing) ".")))))
 
 (defn try-attack [game thing target]
   (as-> game game
