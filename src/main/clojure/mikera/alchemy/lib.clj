@@ -731,21 +731,23 @@
   (-> lib
     (proclaim "base herb" "base ingredient" 
               {:level 1
-               :is-herb
+               :is-herb true
                :char (char 0x1D67)
                :colour-fg (colour 0x00B030) 
                :unidentified-name "strange herb" 
                :food-value 1})
     (proclaim "fairgrass weed" "base herb" 
-              {})
+              {:level 1})
     (proclaim "ironroot herb" "base herb" 
-              {})
+              {:level (Rand/d 3)})
     (proclaim "copperleaf herb" "base herb" 
-              {})
+              {:level (Rand/d 5)})
     (proclaim "wolfsbane herb" "base herb" 
-              {})
+              {:level (Rand/d 7)})
     (proclaim "limegrass herb" "base herb" 
-              {})))
+              {:level (Rand/d 9)})
+    (proclaim "shire leaf" "base herb" 
+              {:level (Rand/d 10)})))
 
 (defn define-ingredients [lib]
   (-> lib
