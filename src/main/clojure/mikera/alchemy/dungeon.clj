@@ -329,11 +329,14 @@
             (or-loop [1000] (mm/place-thing game lmin (loc x2 y2 z1) (lib/create game "The Philosopher's Stone")))
             (error "Can't place philosopher's stone!!")))))
 
+(def DUNGEON_MIN (loc -35 -25 -10))
+(def DUNGEON_MAX (loc 35 25 0))
+
 (defn generate-dungeon 
   "Attempts to generate dungeon. May return nil on failure" 
   [game]
-   (let [lmin (loc -30 -30 -10) 
-         lmax (loc 30 30 0)]
+   (let [lmin DUNGEON_MIN
+         lmax DUNGEON_MAX]
      (and-as-> game game
               (assoc game :volume {:min lmin :max lmax})
               (mm/fill-block game (loc-dec lmin) (loc-inc lmax) (lib/create game "rock wall"))
@@ -347,8 +350,7 @@
 (defn generate 
    "Main dungeon generation algorithm"
   [game]
-  (let [lmin (loc -30 -30 -10)
-        lmax (loc 30 30 0)]
+  (let []
     (loop [game game i 100]
           (or (generate-dungeon game)     
               (when (> i 0)
