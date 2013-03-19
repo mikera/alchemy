@@ -4,6 +4,7 @@
   (:use mikera.orculje.util)
   (:use mikera.orculje.text)
   (:require [mikera.alchemy.engine :as engine])
+  (:require [mikera.orculje.text :as text])
   (:require [mikera.cljutils.find :as find])
   (:require [mikera.alchemy.config :as config])
   (:require [clojure.math.combinatorics :as combo])
@@ -518,7 +519,8 @@
   `(fn [~game ~item ~actor ]
      (as-> ~game ~game
        (remove-thing ~game ~item 1)
-       ~@body
+       (let [~item (merge ~item {:number 1 :id nil})] 
+         ~@body)
        (engine/identify ~game ~item)
        )))
 
@@ -561,7 +563,8 @@
                :food-value 100
                :on-consume  (consume-function [game item actor]
                               (!+ actor :food (:food-value item))
-                              (engine/message game actor (str "Mmmm. " (engine/a-name game item) " .Tasty.")))
+                              (engine/message game actor 
+                                              (str "Mmmm. " (text/capitalise (engine/a-name game item)) ". Tasty.")))
                :colour-fg (colour 0xC00000) 
                :z-order 20})))
 
