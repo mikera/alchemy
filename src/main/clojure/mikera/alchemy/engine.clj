@@ -503,7 +503,7 @@
       (use-aps game thing 100)    
       (move-thing game thing loc)
       (if-let [items (and (:is-hero thing) (seq (filter :is-item (get-things game loc))))]
-        (message game thing (str "There is " 
+        (message game thing (str "There " (if (== 1 (get-number (first items))) "is " "are ") 
                                  (text/and-string (map (partial a-name game) items)) 
                                  " here."))
         game))))
