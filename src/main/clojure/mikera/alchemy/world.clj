@@ -46,8 +46,8 @@
     (reduce 
       (fn [game _] 
         (as-> game game
-          (add-thing game (engine/hero game) (lib/create game "[:is-ingredient]"))
-          (add-thing game (engine/hero game) (lib/create game "[:is-potion]"))
+          (add-thing game (engine/hero game) (lib/create game "[:is-ingredient]" 2))
+          (add-thing game (engine/hero game) (lib/create game "[:is-potion]" 2))
           ))
       game
       (range (Rand/d 5))) 

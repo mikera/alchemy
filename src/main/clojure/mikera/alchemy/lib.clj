@@ -276,7 +276,9 @@
     (proclaim "invincible" "base temporary effect"
               {:lifetime 2000
                :parent-modifiers [(modifier :colour-fg (colour (Rand/r 0x1000000)))
-                                  (modifier :ARM (+ value 100))]
+                                  (modifier :ARM (+ value 100))
+                                  (modifier :TG (+ value 100))
+                                  (modifier :is-immortal true)]
                })
     (proclaim "shielded" "base temporary effect"
               {:lifetime 5000
@@ -284,9 +286,9 @@
                                   (modifier :ARM (+ value 5))]
                })
     (proclaim "shielded!" "base temporary effect"
-              {:lifetime 1000
+              {:lifetime 2000
                :parent-modifiers [(modifier :colour-fg (colour (Rand/r 0x60FFFF)))
-                                  (modifier :ARM (+ value 10))]
+                                  (modifier :ARM (+ value 20))]
                })
     (proclaim "slowed" "base temporary effect"
               {:lifetime 2000
@@ -310,14 +312,17 @@
                                   (modifier :TG (long* value 0.5))
                                   (modifier :AG (long* value 0.7))]})  
     (proclaim "confused" "base temporary effect"
-              {:lifetime 20000
-               :parent-modifiers [(modifier :confusion (+ (or value 0) 3))]})       
-    (proclaim "confused!" "base temporary effect"
-              {:lifetime 10000
-               :parent-modifiers [(modifier :confusion (+ (or value 0) 8))]})
-    (proclaim "confused!!" "base temporary effect"
-              {:lifetime 5000
-               :parent-modifiers [(modifier :confusion (+ (or value 0) 20))]})))
+              {:lifetime 3000
+               :parent-modifiers [(modifier :confusion (+ (or value 0) 3))
+                                  (modifier :colour-fg (colour (* (Rand/r 2) 0x404000)))]})       
+    (proclaim "confused!" "confused"
+              {:lifetime 3000
+               :parent-modifiers [(modifier :confusion (+ (or value 0) 8))
+                                  (modifier :colour-fg (colour (* (Rand/r 2) 0x606000)))]})
+    (proclaim "confused!!" "confused"
+              {:lifetime 3000
+               :parent-modifiers [(modifier :confusion (+ (or value 0) 20))
+                                  (modifier :colour-fg (colour (* (Rand/r 2) 0x808000)))]})))
 
 (defn proclaim-stat-effects 
   ([lib]
@@ -425,7 +430,7 @@
     (proclaim "fountain of healing" "base decoration" 
               {:char (char 0x046A)
                :is-fountain true
-               :colour-fg (colour 0x00FFFF)
+               :colour-fg (colour 0x00FF00)
                :heal-amount-max 10
                :on-use (fn [game app actor]
                          (as-> game game
@@ -971,7 +976,7 @@
                     :hps 40       
                     :freq 0.4
                     :speed 200
-                    :char \S
+                    :char (char 0x0161) 
                     :colour-fg (colour 0xFFFFFF)})
     (proclaim "spectre" "base undead" 
                    {:level 10
@@ -992,12 +997,12 @@
               {:is-goblin true
                :char \g})
     (proclaim "small goblin" "base goblin" 
-              {:level 0
+              {:level 1
                :SK 5 :ST 3 :AG 8 :TG 3 :IN 5 :WP 3 :CH 5 :CR 2
                :hps 4
                :colour-fg (colour 0x20C000)})
     (proclaim "goblin" "base goblin" 
-              {:level 1
+              {:level 2
                :SK 5 :ST 5 :AG 8 :TG 5 :IN 5 :WP 5 :CH 5 :CR 3
                :hps 6
                :colour-fg (colour 0x009000)})
@@ -1013,13 +1018,13 @@
                :SK 9 :ST 13 :AG 9 :TG 18 :IN 5 :WP 12 :CH 3 :CR 4
                :hps 20
                :char \o
-               :colour-fg (colour 0x406040)})
+               :colour-fg (colour 0x606060)})
     (proclaim "orc champion" "base goblin" 
               {:level 8
                :SK 16 :ST 19 :AG 16 :TG 18 :IN 4 :WP 8 :CH 3 :CR 4
                :hps 25
                :speed 150
-               :char \o
+               :char (char 0x00F5)
                :freq 0.4
                :attack ATT_SWORD
                :colour-fg (colour 0x80C000)})
@@ -1046,12 +1051,13 @@
                    {:is-immortal true
                     :level 10
                     :freq 0.1
+                    :char (char 0x01E6) 
                     :colour-fg (colour 0xFFFFFF)})
     
     ;; snakes
     (proclaim "base snake" "base creature" 
                    {:level 1
-                    :SK 5 :ST 3 :AG 8 :TG 4 :IN 2 :WP 6 :CH 4 :CR 1
+                    :SK 5 :ST 3 :AG 6 :TG 3 :IN 2 :WP 6 :CH 4 :CR 1
                     :is-snake true
                     :is-reptile true
                     :attack ATT_BITE
@@ -1060,9 +1066,13 @@
                     :colour-fg (colour 0x60C060)})
     (proclaim "grass snake" "base snake"
                    {})
-    (proclaim "white snake" "base snake"
+    (proclaim "snake" "base snake"
                    {:level 2
-                    :colour-fg (colour 0xFFFFFF)
+                    :hps 5
+                    :colour-fg (colour 0x409040)})
+    (proclaim "red snake" "base snake"
+                   {:level 3
+                    :colour-fg (colour 0xC00000)
                     :attack (merge ATT_BITE {:damage-effect "confused!" :damage-effect-chance 40})})
     (proclaim "cobra" "base snake"
                    {:level 5
@@ -1074,19 +1084,28 @@
     (proclaim "king cobra" "base snake"
                    {:level 7
                     :SK 6 :ST 5 :AG 20 :TG 17 :IN 4 :WP 19 :CH 8 :CR 3
-                    :char \C
+                    :char (char 0x010D)
                     :hps 25
                     :attack (merge ATT_POISON_BITE {:damage-effect "poisoned!" :damage-effect-chance 40})
                     :colour-fg (colour 0xD0A060)})
     (proclaim "wyrm" "base snake"
                    {:level 10
                     :SK 16 :ST 15 :AG 20 :TG 37 :IN 14 :WP 29 :CH 12 :CR 8
-                    :char \W
+                    :char (char 0x0174)
                     :freq 0.3
                     :speed 200
                     :hps 50
                     :attack (merge ATT_POISON_BITE {:damage-effect "poisoned!!" :damage-effect-chance 40})
-                    :colour-fg (colour 0xD0A060)})))
+                    :colour-fg (colour 0xF0A060)})
+    (proclaim "dragon" "base snake"
+                   {:level 10
+                    :SK 26 :ST 25 :AG 20 :TG 70 :IN 24 :WP 49 :CH 26 :CR 30
+                    :char (char 0x1E0A)
+                    :freq 0.1
+                    :speed 250
+                    :hps 150
+                    :attack (merge ATT_POISON_BITE {:damage-effect "poisoned!!" :damage-effect-chance 40})
+                    :colour-fg (colour 0xFFFF00)})))
 
 (defn rhs "Random hero stat" [] (+ 5 (Rand/r 8)))
 

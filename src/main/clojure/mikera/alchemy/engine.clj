@@ -483,11 +483,12 @@
       (try-use game thing target)))
 
 
-(defn can-move 
+(defn can-move-to 
   "Returns true if a move or attack to a target location is possible."
   ([game m tloc]
   (let [bl (get-blocking game tloc)]
     (if (or (not bl) 
+            (and (:is-intelligent m) (:is-door bl))
             (is-hostile m bl))
       true
       nil))))
@@ -524,13 +525,13 @@
                   (check (or (? game thing :confusion) 0) (? thing :WP))) (DIRECTIONS (Rand/r 8)) dir)
         tloc (loc-add loc dir)
         dz (dir 2)]
-    (if (not (== 0 (dir 2)))
+    (if (not (== 0 dz))
       (if-let [stairs (find-nearest-thing game :is-stairs thing 0)]
         (cond 
           (= dir (:move-dir stairs)) (try-move game thing tloc)
           (and (:is-hero thing) (= "exit staircase" (:name stairs))) (try-exit game thing)
           :else (message game thing (str "Cannot go " (if (> dz 0) "up" "down") " here")))
-        (if config/WALK_THROUGH_LEVELS
+        (if (and (:is-hero thing) config/WALK_THROUGH_LEVELS)
           (try-move game thing tloc)
           (message game thing "There are no stairs here!")))
       (try-move game thing tloc))))
@@ -544,7 +545,7 @@
     (let [loc (location game m)
           tloc (loc-add loc dir)]
       ;;(println (str (:name m) " considering direction " dir))
-      (if (can-move game m tloc)
+      (if (can-move-to game m tloc)
         (try-move-dir game m dir)
         nil))))
 
@@ -554,20 +555,29 @@
   ([game m]
     ;;(println (str "monster thinking: " (:name m)))
     (let [m (get-thing game m)
-          loc (location game m)]
-      (if (is-square-visible? game loc)
-        (let [hloc (hero-location game)
-              dir (direction loc hloc)
+          loc (location game m)
+          tloc (:target-location m)
+          hloc (hero-location game)
+          same-level? (== (hloc 2) (loc 2))
+          hloc (or (and same-level? (is-square-visible? game loc) hloc)
+                   tloc)]
+      (if hloc
+        (let [dir (direction loc hloc)
               di (or (REVERSE-DIRECTIONS dir) 
                      (do 
                        ;;(println "picking random direction") 
-                       (Rand/r 8)))]
+                       (Rand/r 8)))
+              game (if same-level? (! game m :target-location hloc) game)]
           (or 
             (consider-move-dir game m dir)
+            (consider-move-dir game m (DIRECTIONS 8)) 
+            (consider-move-dir game m (DIRECTIONS 9))
             (consider-move-dir game m (DIRECTIONS (mod (inc di) 8)))
             (consider-move-dir game m (DIRECTIONS (mod (dec di) 8)))
             (consider-move-dir game m (DIRECTIONS (Rand/r 8)))
-            (wait game m)))
-        (if (Rand/chance 0.2)
-          (try-move game m (loc-add loc (DIRECTIONS (Rand/r 8))))
+            (as-> game game
+              (! game m :target-location nil)
+              (wait game m))))
+        (if (Rand/chance 0.1)
+          (try-move-dir game m (DIRECTIONS (Rand/r 10)))
           game)))))
