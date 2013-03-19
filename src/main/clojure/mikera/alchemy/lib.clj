@@ -731,6 +731,7 @@
   (-> lib
     (proclaim "base herb" "base ingredient" 
               {:level 1
+               :is-herb
                :char (char 0x1D67)
                :colour-fg (colour 0x00B030) 
                :unidentified-name "strange herb" 
