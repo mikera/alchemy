@@ -725,9 +725,13 @@
     (let [^JFrame frame (launch s)]
       (.setDefaultCloseOperation frame JFrame/EXIT_ON_CLOSE))))
 
+(defmacro dog [& body]
+  `(let [~'game @(:game ~'s)
+         ~'hero (engine/hero ~'game)]
+     ~@body))
+
 (defmacro go [& body]
-  `(let [game# @(:game ~'s)
-         ~'hero (engine/hero game#)]
+  `(dog
      (reset! (:game ~'s) 
        (as-> game# ~'game
              ~@body))
