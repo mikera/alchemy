@@ -1,8 +1,6 @@
 (ns mikera.alchemy.lib
-  (:use mikera.orculje.core)
+  (:use [mikera.orculje core util text rules])
   (:use mikera.cljutils.error)
-  (:use mikera.orculje.util)
-  (:use mikera.orculje.text)
   (:require [mikera.alchemy.engine :as engine])
   (:require [mikera.orculje.text :as text])
   (:require [mikera.cljutils.find :as find])
@@ -32,14 +30,6 @@
                        :colour-bg (colour 0x404040)
                        :z-order (long -100)})
 
-(def MAIN_STATS {:SK {:name "skill"}
-                 :ST {:name "strength"}
-                 :AG {:name "agility"}
-                 :TG {:name "toughness"}
-                 :IN {:name "intelligence"}
-                 :WP {:name "willpower"}
-                 :CH {:name "charisma"}
-                 :CR {:name "craft"}})
 
 ;; ===================================================
 ;; utility functions for library building
@@ -327,9 +317,9 @@
 
 (defn proclaim-stat-effects 
   ([lib]
-    (reduce (fn [lib stat] (proclaim-stat-effects lib stat)) lib (keys MAIN_STATS)))
+    (reduce (fn [lib stat] (proclaim-stat-effects lib stat)) lib MAIN-STATS))
   ([lib stat]
-    (let [statname (or (:name (MAIN_STATS stat)) (error "No name for stat " stat))]
+    (let [statname (or (:name (MAIN-STAT-INFO stat)) (error "No name for stat " stat))]
       (-> lib 
         (proclaim (str statname " boost") "base temporary effect"
                   {:level (Rand/d 10)
@@ -615,9 +605,9 @@
   ([lib]
     (as-> lib lib
       (proclaim lib "base stat potion" "base potion" {:freq 0.5})
-      (reduce (fn [lib stat] (proclaim-stat-potions lib stat)) lib (keys MAIN_STATS))))
+      (reduce (fn [lib stat] (proclaim-stat-potions lib stat)) lib MAIN-STATS)))
   ([lib stat]
-    (let [statname (:name (MAIN_STATS stat))]
+    (let [statname (:name (MAIN-STAT-INFO stat))]
       (-> lib
         (proclaim (str "gain " statname " potion") "base stat potion" 
               {:level (Rand/d 9)
