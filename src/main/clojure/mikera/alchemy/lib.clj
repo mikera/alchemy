@@ -305,15 +305,15 @@
     (proclaim "confused" "base temporary effect"
               {:lifetime 3000
                :parent-modifiers [(modifier :confusion (+ (or value 0) 3))
-                                  (modifier :colour-fg (colour (* (Rand/r 2) 0x404000)))]})       
+                                  (modifier :colour-bg (colour (* (Rand/r 2) 0x404000)))]})       
     (proclaim "confused!" "confused"
               {:lifetime 3000
                :parent-modifiers [(modifier :confusion (+ (or value 0) 8))
-                                  (modifier :colour-fg (colour (* (Rand/r 2) 0x606000)))]})
+                                  (modifier :colour-bg (colour (* (Rand/r 2) 0x606000)))]})
     (proclaim "confused!!" "confused"
               {:lifetime 3000
                :parent-modifiers [(modifier :confusion (+ (or value 0) 20))
-                                  (modifier :colour-fg (colour (* (Rand/r 2) 0x808000)))]})))
+                                  (modifier :colour-bg (colour (* (Rand/r 2) 0x808000)))]})))
 
 (defn proclaim-stat-effects 
   ([lib]

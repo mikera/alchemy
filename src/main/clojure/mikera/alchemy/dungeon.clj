@@ -45,13 +45,15 @@
 (defn decorate-lab [game room]
   (let [lmin (:lmin room) lmax (:lmax room)]
     (and-as-> game game
-      (maybe-place-thing game lmin lmax (lib/create game "[:is-apparatus]"))
+      (maybe-place-thing game (loc-add lmin 1 1 0) (loc-add lmax -1 -1 0)
+                         (lib/create game "[:is-apparatus]"))
       (mm/scatter-things game lmin lmax (Rand/d 4) #(lib/create game "[:is-potion]")))))
 
 (defn decorate-fountain-room [game room]
   (let [lmin (:lmin room) lmax (:lmax room)]
     (and-as-> game game
-      (maybe-place-thing game lmin lmax (lib/create game "[:is-fountain]"))
+      (maybe-place-thing game (loc-add lmin 1 1 0) (loc-add lmax -1 -1 0) 
+                         (lib/create game "[:is-fountain]"))
       (mm/fill-block game lmin lmax (lib/create game "moss floor"))
       (mm/scatter-things game lmin lmax (Rand/d 8) #(lib/create game "[:is-herb]")))))
 
@@ -59,7 +61,8 @@
   (let [lmin (:lmin room)
         lmax (:lmax room)]
     (and-as-> game game
-      (if (Rand/chance 0.3) (maybe-place-thing game lmin lmax (lib/create game "[:is-decoration]" (- (lmin 2)))) game)        
+      (if (Rand/chance 0.3) (maybe-place-thing game (loc-add lmin 1 1 0) (loc-add lmax -1 -1 0)  
+                                               (lib/create game "[:is-decoration]" (- (lmin 2)))) game)        
       (if (Rand/chance 0.5) (maybe-place-thing game lmin lmax (lib/create game "[:is-creature]" (- (lmin 2)))) game)        
       (if (Rand/chance 0.5) (maybe-place-thing game lmin lmax (lib/create game "[:is-item]" (- (lmin 2)))) game)
       )))
