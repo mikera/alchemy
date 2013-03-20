@@ -5,6 +5,7 @@
   (:use [mikera.cljutils.error]) 
   (:require [mikera.alchemy.dungeon :as dungeon]) 
   (:require [mikera.orculje.mapmaker :as mm]) 
+  (:require [mikera.orculje.rules :as rules]) 
   (:import [mikera.engine PersistentTreeGrid]) 
   (:import [mikera.util Rand]) 
   (:use mikera.orculje.core))
@@ -179,13 +180,13 @@
       (end-turn game))))
 
 (defn handle-analyse 
-  "Handles analysis of a potion"
+  "Handles analysis of a potion. Potion should be in hero's inventory."
   [game item]
   (let [h (or (engine/hero game) (error "no here?!?"))]
     (as-> game game
       (engine/clear-messages game)
       (remove-thing game item 1) 
-      (if (engine/check (? game h :IN) 5)
+      (if (rules/check (? h :IN) 5)
         (as-> game game 
           (engine/identify game item)
           (engine/message game h (str "You successfully identify " (engine/the-name game item))))

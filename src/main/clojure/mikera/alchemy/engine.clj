@@ -43,11 +43,6 @@
 (defn base-name [game thing]
   (text/num-name game thing))
 
-(defn check 
-  "Random skill check"
-  ([a b]
-    (> a (* (Rand/nextDouble) (+ a b)))))
-
 (defn is-hostile [a b]
   (or (:is-hero a) (:is-hero b)))
 
