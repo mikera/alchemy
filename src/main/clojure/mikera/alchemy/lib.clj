@@ -1018,7 +1018,7 @@
                     :hps 10
                     :char \s
                     :colour-fg (colour 0xE0E0C0)})
-    (proclaim "skeleton warrior" "base undead" 
+    (proclaim "skeleton warrior" "skeleton" 
                    {:level 7
                     :SK 15 :ST 15 :AG 10 :TG 15 :IN 0 :WP 0 :CH 0 :CR 0
                     :hps 20
@@ -1029,10 +1029,10 @@
                    {:level 5
                     :SK 16 :ST 6 :AG 8 :TG 10 :IN 0 :WP 0 :CH 0 :CR 0
                     :hps 12
-                    :char \W
+                    :char \w
                     :colour-fg (colour 0xE0E0C0)
                     :attack (merge ATT_NORMAL {:damage-effect "weakened" :damage-effect-chance 0.3})})
-    (proclaim "skeleton hero" "base undead" 
+    (proclaim "skeleton hero" "skeleton" 
                    {:level 9
                     :SK 25 :ST 25 :AG 20 :TG 25 :IN 0 :WP 0 :CH 0 :CR 0
                     :hps 40       
@@ -1078,6 +1078,7 @@
               {:level 2
                :SK 5 :ST 5 :AG 8 :TG 5 :IN 5 :WP 5 :CH 5 :CR 3
                :hps 6
+               :attack ATT_DAGGER
                :colour-fg (colour 0x009000)})
     (proclaim "orc" "base goblin" 
               {:level 4
@@ -1102,7 +1103,7 @@
                :attack ATT_SWORD
                :colour-fg (colour 0x80C000)})
     (proclaim "troll" "base goblinoid" 
-              {:level 11
+              {:level 9
                :SK 13 :ST 33 :AG 9 :TG 27 :IN 5 :WP 22 :CH 3 :CR 4
                :hps 50
                :attack ATT_MACE
@@ -1110,7 +1111,7 @@
                :colour-fg (colour 0x507050)})
     (proclaim "troll king" "base goblinoid" 
               {:level 11
-               :SK 16 :ST 43 :AG 19 :TG 47 :IN 10 :WP 32 :CH 3 :CR 4
+               :SK 18 :ST 48 :AG 19 :TG 57 :IN 10 :WP 42 :CH 13 :CR 6
                :hps 100
                :speed 150
                :attack ATT_MACE

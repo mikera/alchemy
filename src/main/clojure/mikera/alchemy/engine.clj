@@ -360,7 +360,7 @@
            (as-> game game
              (message game actor (str (text/verb-phrase game :the actor "miss" :the target) "."))
              (message game target (str (text/verb-phrase game :the actor "miss" :the target) "."))) 
-        (not (check ask dodge))
+        (not (check ask dsk))
            (as-> game game
              (message game actor (str (text/verb-phrase game :the target "block") " your attack."))
              (message game target (str (text/verb-phrase game :the target "block") " the attack of " (the-name game actor) "."))) 
