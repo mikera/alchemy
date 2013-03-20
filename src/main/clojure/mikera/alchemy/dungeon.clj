@@ -88,11 +88,11 @@
 (defn decorate-room [game room]
   (and-as-> game game 
     (cond
-      (Rand/chance 0.03)
+      (Rand/chance 0.06)
         (decorate-lair game room)
-      (Rand/chance 0.2)
+      (Rand/chance 0.3)
         (decorate-normal-room game room)
-      (Rand/chance 0.2)
+      (Rand/chance 0.15)
         (decorate-store-room game room (Rand/pick ["[:is-food]" "[:is-potion]" "[:is-mushroom]" "[:is-ingredient]" "[:is-herb]"]))
       (Rand/chance 0.07)
         (decorate-lab game room)

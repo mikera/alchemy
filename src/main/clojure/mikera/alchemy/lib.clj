@@ -815,17 +815,21 @@
                  :ASK 1.0 :DSK 0.75 :AST 1.0 
                  :damage-type :normal})
 (def ATT_KICK {:name "normal attack" 
-                 :ASK 0.6 :DSK 0.3 :AST 0.5 
-                 :damage-type :impact})
+               :ASK 0.6 :DSK 0.3 :AST 0.5 
+               :damage-type :impact})
+(def ATT_CLAW {:name "normal attack" 
+               :ASK 0.7 :DSK 0.7 :AST 0.7 
+               :damage-type :normal
+               :hit-verb "claw"})
 
 (def ATT_BITE {:name "bite attack" 
                :hit-verb "bite" 
-                 :ASK 1.0 :DSK 0.0 :AST 1.0   ;; no dsk - can't block with a bite!
-                 :damage-type :normal})
+               :ASK 1.0 :DSK 0.2 :AST 1.0   ;; low dsk - can't block with a bite!
+               :damage-type :normal})
 
 (def ATT_POISON_BITE {:name "poison bite" 
                       :hit-verb "bite"
-                      :ASK 1.0 :DSK 0.0 :AST 0.75 
+                      :ASK 1.0 :DSK 0.2 :AST 0.75 
                       :damage-type :normal
                       :damage-effect "poisoned"})
 
@@ -915,6 +919,60 @@
                :drop-type "[:is-item]"
                :on-action engine/monster-action})
     
+    ;; misc beasts
+    (proclaim "base beast" "base creature"
+              {:is-beast true
+               :aggro-range 6
+               :drop-chance 0.5
+               :drop-type "[:is-food]"})
+    (proclaim "bat" "base beast"
+              {:level 0
+               :confusion 40
+               :SK 4 :ST 3 :AG 9 :TG 3 :IN 3 :WP 5 :CH 5 :CR 3
+               :attack ATT_BITE
+               :hps 4
+               :char \b
+               :colour-fg (colour 0xA0A0A0)})
+    (proclaim "cave bat" "bat"
+              {:level 2
+               :confusion 30
+               :SK 5 :ST 6 :AG 9 :TG 6 :IN 3 :WP 8 :CH 5 :CR 3
+               :hps 6
+               :colour-fg (colour 0xA09080)})
+    (proclaim "giant bat" "bat"
+              {:level 5
+               :confusion 20
+               :SK 5 :ST 10 :AG 9 :TG 10 :IN 5 :WP 12 :CH 5 :CR 3
+               :hps 15
+               :colour-fg (colour 0x8090A0)}) 
+    (proclaim "vampyre bat" "bat"
+              {:level 7
+               :is-vampyre true
+               :confusion 5
+               :SK 7 :ST 7 :AG 13 :TG 9 :IN 5 :WP 12 :CH 8 :CR 6
+               :drop-chance 0.5
+               :drop-type "vampyre"
+               :hps 10
+               :colour-fg (colour 0xC04090)})
+     (proclaim "cave bear" "base beast"
+              {:level 6
+               :is-mammal true
+               :confusion 2
+               :SK 12 :ST 22 :AG 8 :TG 30 :IN 5 :WP 42 :CH 12 :CR 3
+               :hps 60
+               :attack ATT_CLAW
+               :char \B
+               :colour-fg (colour 0x906030)})
+     (proclaim "giant bear" "base beast"
+              {:level 8
+               :is-mammal true
+               :confusion 1
+               :SK 12 :ST 32 :AG 8 :TG 60 :IN 5 :WP 52 :CH 12 :CR 3
+               :hps 100
+               :attack ATT_CLAW
+               :char \B
+               :colour-fg (colour 0xC0B0A0)})
+    
     ;; rats
     (proclaim "base rat" "base creature" 
                    {:SK 4 :ST 3 :AG 6 :TG 2 :IN 1 :WP 5 :CH 2 :CR 2
@@ -991,6 +1049,17 @@
                     :speed 200
                     :char (char 0x0161) 
                     :colour-fg (colour 0xFFFFFF)})
+    (proclaim "vampyre" "base undead" 
+                   {:level 11
+                    :SK 25 :ST 25 :AG 40 :TG 30 :IN 30 :WP 30 :CH 0 :CR 0
+                    :is-vampyre true
+                    :is-intelligent true
+                    :hps 100            
+                    :speed 250
+                    :freq 0.3
+                    :char (char 0x1E7C) 
+                    :colour-fg (colour 0xC04090)
+                    :attack (merge ATT_NORMAL {:damage-effect "weakened!" :damage-effect-chance 0.3})})
     (proclaim "spectre" "base undead" 
                    {:level 10
                     :SK 25 :ST 25 :AG 20 :TG 25 :IN 0 :WP 0 :CH 0 :CR 0
@@ -1053,10 +1122,11 @@
     (proclaim "base golem" "base creature" 
                    {:SK 15 :ST 20 :AG 8 :TG 30 :IN 0 :WP 16 :CH 0 :CR 0
                     :attack ATT_NORMAL
+                    :is-construct false
                     :is-living false
                     :speed 80
                     :hps 40
-                    :char \G
+                    :char \G 
                     :colour-fg (colour 0xC0C0C0)})
     (proclaim "golem" "base golem" 
                    {:level 8})
@@ -1071,6 +1141,7 @@
     (proclaim "base snake" "base creature" 
                    {:level 1
                     :SK 5 :ST 3 :AG 6 :TG 3 :IN 2 :WP 6 :CH 4 :CR 1
+                    :aggro-range 4
                     :is-snake true
                     :is-reptile true
                     :attack ATT_BITE
@@ -1114,9 +1185,11 @@
                    {:level 11
                     :SK 26 :ST 25 :AG 20 :TG 70 :IN 24 :WP 49 :CH 26 :CR 30
                     :char (char 0x1E0A)
+                    :is-intelligent true
+                    :aggro-range nil
                     :freq 0.1
                     :speed 250
-                    :hps 150
+                    :hps 250
                     :attack (merge ATT_POISON_BITE {:damage-effect "poisoned!!" :damage-effect-chance 40})
                     :colour-fg (colour 0xFFFF00)})))
 
@@ -1165,7 +1238,9 @@
       (loop [v nil cumfreq 0.0 objs objs]
         (if objs
           (let [o (first objs)
-                valid? (and (pred o) (>= level (or (:level-min o) 0)))
+                valid? (and (pred o) (>= (or (:level-max o) Long/MAX_VALUE) 
+                                         level 
+                                         (or (:level-min o) 0)))
                 freq-o (if valid? (double (:freq o)) 0.0)
                 keeper? (< (* (Rand/nextDouble) (+ cumfreq freq-o)) freq-o)]
             (recur (if keeper? o v) (+ cumfreq freq-o) (next objs)))
