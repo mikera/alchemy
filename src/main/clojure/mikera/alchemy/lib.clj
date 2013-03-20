@@ -1059,7 +1059,7 @@
                     :freq 0.3
                     :char (char 0x1E7C) 
                     :colour-fg (colour 0xC04090)
-                    :attack (merge ATT_NORMAL {:damage-effect "weakened!" :damage-effect-chance 0.3})})
+                    :attack (merge ATT_NORMAL {:damage-effect "weakened!" :damage-effect-chance 0.2})})
     (proclaim "spectre" "base undead" 
                    {:level 10
                     :SK 25 :ST 25 :AG 20 :TG 25 :IN 0 :WP 0 :CH 0 :CR 0
@@ -1111,39 +1111,53 @@
                :attack ATT_SWORD
                :colour-fg (colour 0x80C000)})
     (proclaim "troll" "base goblinoid" 
-              {:level 9
+              {:level 11
                :SK 13 :ST 33 :AG 9 :TG 27 :IN 5 :WP 22 :CH 3 :CR 4
                :hps 50
                :attack ATT_MACE
                :char \T
                :colour-fg (colour 0x507050)})
+    (proclaim "troll king" "base goblinoid" 
+              {:level 11
+               :SK 16 :ST 43 :AG 19 :TG 47 :IN 10 :WP 32 :CH 3 :CR 4
+               :hps 100
+               :speed 150
+               :attack ATT_MACE
+               :char (char 0x1E6A) 
+               :colour-fg (colour 0xA0A060)})
     
-    ;; golems
-    (proclaim "base golem" "base creature" 
+    
+    ;; golems and constructs
+    (proclaim "base construct" "base creature"
+              {:attack ATT_NORMAL
+               :is-construct true
+               :is-living false
+                         })
+    (proclaim "base golem" "base construct" 
                    {:SK 15 :ST 20 :AG 8 :TG 30 :IN 0 :WP 16 :CH 0 :CR 0
-                    :attack ATT_NORMAL
-                    :is-construct false
-                    :is-living false
                     :speed 80
                     :hps 40
                     :char \G 
                     :colour-fg (colour 0xC0C0C0)})
     (proclaim "golem" "base golem" 
-                   {:level 8})
-    (proclaim "immortal golem" "base golem" 
-                   {:is-immortal true
-                    :level 10
+                   {:level 8
+                    :char \G })
+    (proclaim "immortal golem" "golem" 
+                   {:level 10
+                    :is-immortal true
                     :freq 0.1
                     :char (char 0x01E6) 
                     :colour-fg (colour 0xFFFFFF)})
     
     ;; snakes
+    (proclaim "base reptile" "base creature"
+              {:is-reptile true
+               :damage-factor-poison 0.0})
     (proclaim "base snake" "base creature" 
                    {:level 1
                     :SK 5 :ST 3 :AG 6 :TG 3 :IN 2 :WP 6 :CH 4 :CR 1
                     :aggro-range 4
                     :is-snake true
-                    :is-reptile true
                     :attack ATT_BITE
                     :hps 3
                     :char \s
@@ -1176,14 +1190,16 @@
                    {:level 10
                     :SK 16 :ST 15 :AG 20 :TG 37 :IN 14 :WP 29 :CH 12 :CR 8
                     :char (char 0x0174)
+                    :ARM 15
                     :freq 0.3
                     :speed 200
-                    :hps 50
+                    :hps 60
                     :attack (merge ATT_POISON_BITE {:damage-effect "poisoned!!" :damage-effect-chance 40})
                     :colour-fg (colour 0xF0A060)})
-    (proclaim "dragon" "base snake"
+    (proclaim "dragon" "base reptile"
                    {:level 11
                     :SK 26 :ST 25 :AG 20 :TG 70 :IN 24 :WP 49 :CH 26 :CR 30
+                    :ARM 30
                     :char (char 0x1E0A)
                     :is-intelligent true
                     :aggro-range nil

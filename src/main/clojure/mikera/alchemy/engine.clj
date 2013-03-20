@@ -226,8 +226,35 @@
 ;; ======================================================
 ;; damage and healing
 
-(def DAMAGE-TYPES {:poison {}
-                   :normal {}})
+(def DEFAULT-RESIST-STAT :TG)   ;; stat used to reduce damage types
+(def DEFAULT-DAMAGE-FACTOR 1.0) ;; multiplier for damage types, can be overrided by vulnerable / invulnerable creatures
+
+(let [dtypes-base {:normal {:factor :damage-factor-normal
+                            :armour :ARM}
+                   :impact {:factor :damage-factor-impact
+                            :armour :ARM}
+                   :poison {:factor :damage-factor-poison
+                            :affect-pred :is-living}
+                   :fire {:factor :damage-factor-impact
+                          :armour :ARM-ice}
+                   :ice {:factor :damage-factor-ice
+                         :armour :ARM-fire}
+                   :water {:factor :damage-factor-water
+                           :default-factor 0.0} ;; most things not damaged by water
+                   :lightning {:factor :damage-factor-lightning
+                               :armour :ARM-lightning
+                               :resist-stat :WP}
+                   :acid {:factor :damage-factor-acid
+                          :armour :ARM}}]
+  (def DAMAGE-TYPES 
+    (reduce 
+      (fn [m [k v]]
+        (assoc m k
+          (as-> v v
+                (assoc v :resist-stat (or (:resist-stat v) DEFAULT-RESIST-STAT))
+                (assoc v :default-factor (or (:default-factor v) DEFAULT-DAMAGE-FACTOR)))))
+      dtypes-base
+      dtypes-base)))
 
 
 (defn add-effect 
@@ -264,6 +291,28 @@
         (if (>= dam hps)
           (die game target)
           game)))))
+
+(defn calc-armour
+  "Calculates the armmour of a thing vs. a specific damage type"
+  [game target damage-type]
+  (let [dt (or (DAMAGE-TYPES damage-type) (error "Damage type not known [" damage-type "]"))
+        arm-stat (:armour dt)
+        arm-val (or (? game target arm-stat) 0)]
+    arm-val))
+
+(defn calc-damage
+  "Calculates damage on a target, after including immunity and resistances"
+  ([game target base-damage damage-type]
+    (let [dt (or (DAMAGE-TYPES damage-type) (error "Damage type not known [" damage-type "]"))
+          resist-stat (:resist-stat dt)
+          resist-val (* 0.5 (or (? game target resist-stat) 0))
+          affect-pred (:affect-pred dt)
+          affected? (or (not affect-pred) (affect-pred target))
+          factor-stat (or (:factor dt) (error "Damage type [" damage-type  "]  has no :factor"))
+          factor (or (? game target factor-stat) (:default-factor dt))]
+      (if affected?
+        (long* factor base-damage (/ base-damage (+ resist-val base-damage)))
+        0))))
 
 (defn heal [game target amount]
   (if (:is-undead target)
@@ -310,14 +359,17 @@
     (apply max (map #(or (:DSK %) 0)  defs))))
 
 (defn hit [game actor target weapon critical?]
-  (let [ast (* (? actor :ST) (? weapon :AST))
+  (let [ast (double (* (? actor :ST) (? weapon :AST)))
         hit-verb (or (:hit-verb weapon) "hit")
         hit-verb (if critical? (str "skillfully " hit-verb) hit-verb)
         dam-type (or (:damage-type weapon) :normal)
-        arm (+ (* 0.5 (or (? target :TG) 0)) (or (? target :ARM) 0))
-        dam (* ast (Rand/nextDouble))
-        dam (if critical? (+ dam (* ast (Rand/nextDouble))) dam) 
-        dam (long* dam (/ dam (+ dam arm)))
+        arm (calc-armour game target dam-type)
+        base-dam (* ast (Rand/nextDouble))
+        base-dam (max 0 (- base-dam (* arm (Rand/nextDouble))))
+        base-dam (if critical? 
+                   (+ base-dam (* ast (Rand/nextDouble))) 
+                   base-dam) 
+        dam (calc-damage game target base-dam dam-type)
         dam-str (cond 
                   (> dam 0) 
                     (str " for " dam " damage"
