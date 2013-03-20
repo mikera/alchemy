@@ -520,7 +520,8 @@
      (as-> ~game ~game
        (remove-thing ~game ~item 1)
        (let [~item (merge ~item {:number 1 :id nil})] 
-         ~@body)
+         (as-> ~game ~game 
+               ~@body))
        (engine/identify ~game ~item)
        )))
 

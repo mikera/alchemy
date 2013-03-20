@@ -198,6 +198,10 @@
   (or (:is-identified thing)
       (:is-identified ((:objects (:lib game)) (:name thing)))))
 
+(defn is-recipe-known? [game thing]
+  (or (:is-recipe-known thing)
+      (:is-recipe-known ((:objects (:lib game)) (:name thing)))))
+
 (defn identify-recipe [game thing]
   (let [name (:name thing)]
     (update-in game [:lib :objects name :is-recipe-known] (fn [old] true))))
@@ -477,8 +481,10 @@
       (try-attack game thing target)
     (and (:is-intelligent thing) (:is-door target))
       (try-open game thing target)
-    :else
-      (try-use game thing target)))
+    (:is-hero thing)
+      (try-use game thing target)
+    :else 
+      (use-aps game thing 100)))
 
 
 (defn can-move-to 

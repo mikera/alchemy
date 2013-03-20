@@ -290,8 +290,16 @@
                            (if (< (+ pos 25) c) "[DOWN for more]  " "")))
     (.repaint jc)))
 
+(def last-item-pos (atom 0))
+(defn select-item-pos [inv]
+  (let [old-pos (long @last-item-pos)
+        c (count inv)]
+    (if (< old-pos c)
+      old-pos
+      0)))
 
 (defn item-select-handler [state msg items pos action]
+  (reset! last-item-pos pos)
   (let [c (count items)]
     (redraw-item-select-screen state msg items pos)
 	  (reset! (:event-handler state)
@@ -300,9 +308,9 @@
 	              (cond 
 	                (and (>= sel 0) (< (+ pos sel) c))
 	                  (action (+ sel pos))
-	                (and (> pos 0) (.contains "124" k))
+	                (and (> pos 0) (.contains "784" k))
                     (item-select-handler state msg items (- pos 26) action)
-                  (and (< (+ pos 26) c) (.contains "689" k))
+                  (and (< (+ pos 26) c) (.contains "623" k))
                     (item-select-handler state msg items (+ pos 26) action)  
 	                (= "Q" k)
 	                  (main-handler state)
@@ -434,7 +442,7 @@
                                  (engine/base-name game p)
                                  (if (engine/has-ingredients? game hero p)
                                    " [OK]" " [ingred. missing]"))) inv))
-                      0
+                      (select-item-pos inv) 
                       (fn [n] 
                         (swap! (:game state) world/handle-alchemy (inv n))
                         (main-handler state))))) 
@@ -444,7 +452,9 @@
   (let [game @(:game state)
         hero (engine/hero game)
         inv (vec (filter 
-                   (fn [p] (and (:is-item p) (not (is-identified? game p))))
+                   (fn [p] (and (or (:is-potion p) (:is-ingredient p))
+                                (or (not (is-identified? game p))
+                                    (and (:is-potion p) (not (engine/is-recipe-known? game p))))))
                    (contents hero)))]
     (cond
       (== 0 (count inv))
@@ -454,7 +464,7 @@
       (find-nearest-thing game (name-pred "analysis lab") hero 1)
         (item-select-handler state "Analyse an item:" 
                            (vec (map (partial engine/base-name game) inv))
-                           0
+                           (select-item-pos inv) 
                            (fn [n] 
                              (swap! (:game state) world/handle-analyse (inv n))
                              (main-handler state)))
@@ -469,7 +479,7 @@
         inv (vec (filter :is-item (contents hero)))]
     (item-select-handler state "Drop an item:" 
                       (vec (map (partial engine/base-name game) inv))
-                      0
+                      (select-item-pos inv) 
                       (fn [n] 
                         (swap! (:game state) world/handle-drop (inv n))
                         (main-handler state))))) 
@@ -480,7 +490,7 @@
         inv (vec (filter :is-food (contents hero)))]
     (item-select-handler state "Eat an item:" 
                       (vec (map (partial engine/base-name game) inv))
-                      0
+                      (select-item-pos inv) 
                       (fn [n] 
                         (swap! (:game state) world/handle-consume (inv n))
                         (main-handler state))))) 
@@ -492,7 +502,7 @@
         inv (vec (filter :is-potion (contents hero)))]
     (item-select-handler state "Quaff a potion:" 
                       (vec (map (partial engine/base-name game) inv))
-                      0
+                      (select-item-pos inv) 
                       (fn [n] 
                         (swap! (:game state) world/handle-consume (inv n))
                         (main-handler state))))) 
@@ -503,7 +513,7 @@
         inv (vec (filter :is-item (contents hero)))]
     (item-select-handler state "Examine your inventory:" 
                       (vec (map (partial engine/base-name game) inv))
-                      0
+                      (select-item-pos inv) 
                       (fn [n] (main-handler state))))) 
 
 (defn choose-pickup [state]
@@ -556,7 +566,7 @@
         inv (vec (filter :is-item (contents hero)))]
     (item-select-handler state "Select an item to throw:" 
                       (vec (map (partial engine/base-name game) inv))
-                      0
+                      (select-item-pos inv) 
                       (fn [n] 
                         (choose-throw-target state (inv n)))))) 
 
