@@ -624,7 +624,8 @@
           (or (= "R" k) (and game-over? (= "r" k))) 
                     (if game-over?
                       (restart state)
-                      (do-confirm state "Restart game: are you sure (y/n)" #(restart state)))
+                      (do-confirm state "Restart game: are you sure (y/n)" 
+                                  #(restart state)))
           (= "?" k) (show-commands state)
           (= "i" k) (show-inventory state)
           (= "l" k) (do-look state)
@@ -633,7 +634,8 @@
           
           (.contains "12346789<>" k)
             (do
-              (swap! (:game state) world/handle-move (or (move-dir-map k) (error "direction not recognised [" k "]")))
+              (swap! (:game state) world/handle-move (or (move-dir-map k) 
+                                                         (error "direction not recognised [" k "]")))
               (redraw-screen state))
           (.contains ".5" k) 
             (do

@@ -639,7 +639,7 @@
                                  (!+ game actor :hps boost)
                                  (!+ game actor :hps-max boost)
                                  (engine/message game actor
-                                   "You feel amazingingly good..."))))})
+                                   "You feel amazingly good..."))))})
     (proclaim "speed gain potion" "base potion" 
               {:level (Rand/d 2 4) 
                :on-consume (consume-function [game item actor]
@@ -1169,7 +1169,8 @@
                     :SK 4 :ST 3 :AG 10 :TG 7 :IN 4 :WP 9 :CH 8 :CR 3
                     :char \c
                     :hps 15
-                    :attack (merge ATT_POISON_BITE {:damage-effect "poisoned" :damage-effect-chance 40})
+                    :attack (merge ATT_POISON_BITE {:damage-effect "poisoned" 
+                                                    :damage-effect-chance 40})
                     :colour-fg (colour 0xD0A060)})
     (proclaim "king cobra" "base snake"
                    {:level 7
