@@ -5,6 +5,7 @@
   (:use [mikera.cljutils.error]) 
   (:require [mikera.alchemy.dungeon :as dungeon]) 
   (:require [mikera.orculje.mapmaker :as mm]) 
+  (:require [mikera.orculje.rules :as rules]) 
   (:import [mikera.engine PersistentTreeGrid]) 
   (:import [mikera.util Rand]) 
   (:use mikera.orculje.core))
@@ -34,7 +35,7 @@
     (dungeon/generate game)
     
     ;; special data structures
-    (assoc game :functions {:is-identified? engine/is-identified?
+    (assoc game :functions {:is-identified? mikera.alchemy.engine/test-identified?
                             :create lib/create})
     (assoc game :discovered-world (PersistentTreeGrid.))
     
@@ -46,8 +47,8 @@
     (reduce 
       (fn [game _] 
         (as-> game game
-          (add-thing game (engine/hero game) (lib/create game "[:is-ingredient]"))
-          (add-thing game (engine/hero game) (lib/create game "[:is-potion]"))
+          (add-thing game (engine/hero game) (lib/create game "[:is-ingredient]" 2))
+          (add-thing game (engine/hero game) (lib/create game "[:is-potion]" 2))
           ))
       game
       (range (Rand/d 5))) 
@@ -58,6 +59,7 @@
 
     ;; final prep
     (engine/message game (engine/hero game) "Welcome to the dungeon, Alchemist! Seek the Philosopher's Stone!")
+    (engine/message game (engine/hero game) "Press ? to show available key commands")
     (engine/update-visibility game)))
 
 (defn monster-turn [game aps-added]
@@ -178,13 +180,13 @@
       (end-turn game))))
 
 (defn handle-analyse 
-  "Handles analysis of a potion"
+  "Handles analysis of a potion. Potion should be in hero's inventory."
   [game item]
   (let [h (or (engine/hero game) (error "no here?!?"))]
     (as-> game game
       (engine/clear-messages game)
-      (remove-thing game item) 
-      (if (engine/check (? game h :IN) 5)
+      (remove-thing game item 1) 
+      (if (rules/check (? h :IN) 5)
         (as-> game game 
           (engine/identify game item)
           (engine/message game h (str "You successfully identify " (engine/the-name game item))))

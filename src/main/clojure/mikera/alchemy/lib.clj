@@ -1,9 +1,8 @@
 (ns mikera.alchemy.lib
-  (:use mikera.orculje.core)
+  (:use [mikera.orculje core util text rules])
   (:use mikera.cljutils.error)
-  (:use mikera.orculje.util)
-  (:use mikera.orculje.text)
   (:require [mikera.alchemy.engine :as engine])
+  (:require [mikera.orculje.text :as text])
   (:require [mikera.cljutils.find :as find])
   (:require [mikera.alchemy.config :as config])
   (:require [clojure.math.combinatorics :as combo])
@@ -31,14 +30,6 @@
                        :colour-bg (colour 0x404040)
                        :z-order (long -100)})
 
-(def MAIN_STATS {:SK {:name "skill"}
-                 :ST {:name "strength"}
-                 :AG {:name "agility"}
-                 :TG {:name "toughness"}
-                 :IN {:name "intelligence"}
-                 :WP {:name "willpower"}
-                 :CH {:name "charisma"}
-                 :CR {:name "craft"}})
 
 ;; ===================================================
 ;; utility functions for library building
@@ -81,8 +72,7 @@
        :is-visible true
        :z-order 0}) 
     (proclaim "base thing" "base object"
-            {:id nil
-             :is-thing true})))
+            {:is-thing true})))
 
 ;; ===================================================
 ;; library definitions - tiles
@@ -108,6 +98,8 @@
               {:colour-fg (colour 0x606060)})
     (proclaim "cave floor" "base floor" 
               {:colour-fg (colour 0x604020)})
+    (proclaim "moss floor" "base floor" 
+              {:colour-fg (colour 0x106000)})
     (proclaim "underground stream" "base floor" 
               {:char (char 0x2248)
                :colour-fg (colour 0x0030FF)})
@@ -275,7 +267,9 @@
     (proclaim "invincible" "base temporary effect"
               {:lifetime 2000
                :parent-modifiers [(modifier :colour-fg (colour (Rand/r 0x1000000)))
-                                  (modifier :ARM (+ value 100))]
+                                  (modifier :ARM (+ value 100))
+                                  (modifier :TG (+ value 100))
+                                  (modifier :is-immortal true)]
                })
     (proclaim "shielded" "base temporary effect"
               {:lifetime 5000
@@ -283,9 +277,9 @@
                                   (modifier :ARM (+ value 5))]
                })
     (proclaim "shielded!" "base temporary effect"
-              {:lifetime 1000
+              {:lifetime 2000
                :parent-modifiers [(modifier :colour-fg (colour (Rand/r 0x60FFFF)))
-                                  (modifier :ARM (+ value 10))]
+                                  (modifier :ARM (+ value 20))]
                })
     (proclaim "slowed" "base temporary effect"
               {:lifetime 2000
@@ -309,31 +303,34 @@
                                   (modifier :TG (long* value 0.5))
                                   (modifier :AG (long* value 0.7))]})  
     (proclaim "confused" "base temporary effect"
-              {:lifetime 20000
-               :parent-modifiers [(modifier :confusion (+ (or value 0) 3))]})       
-    (proclaim "confused!" "base temporary effect"
-              {:lifetime 10000
-               :parent-modifiers [(modifier :confusion (+ (or value 0) 8))]})
-    (proclaim "confused!!" "base temporary effect"
-              {:lifetime 5000
-               :parent-modifiers [(modifier :confusion (+ (or value 0) 20))]})))
+              {:lifetime 3000
+               :parent-modifiers [(modifier :confusion (+ (or value 0) 3))
+                                  (modifier :colour-bg (colour (* (Rand/r 2) 0x404000)))]})       
+    (proclaim "confused!" "confused"
+              {:lifetime 3000
+               :parent-modifiers [(modifier :confusion (+ (or value 0) 8))
+                                  (modifier :colour-bg (colour (* (Rand/r 2) 0x606000)))]})
+    (proclaim "confused!!" "confused"
+              {:lifetime 3000
+               :parent-modifiers [(modifier :confusion (+ (or value 0) 20))
+                                  (modifier :colour-bg (colour (* (Rand/r 2) 0x808000)))]})))
 
 (defn proclaim-stat-effects 
   ([lib]
-    (reduce (fn [lib stat] (proclaim-stat-effects lib stat)) lib (keys MAIN_STATS)))
+    (reduce (fn [lib stat] (proclaim-stat-effects lib stat)) lib MAIN-STATS))
   ([lib stat]
-    (let [BOOST_EFFECT (Rand/d 5)
-          statname (or (:name (MAIN_STATS stat)) (error "No name for stat " stat))]
+    (let [statname (or (:name (MAIN-STAT-INFO stat)) (error "No name for stat " stat))]
       (-> lib 
         (proclaim (str statname " boost") "base temporary effect"
                   {:level (Rand/d 10)
-                   :lifetime (+ 3000 (* 1000 (Rand/r 5)))
-                   :parent-modifiers [(modifier stat (+ value BOOST_EFFECT))]}
+                   :lifetime (+ 2000 (* 1000 (Rand/r 5)))
+                   :parent-modifiers [(let [BOOST_EFFECT (Rand/d 3 6)]
+                                        (modifier stat (+ value BOOST_EFFECT)))]}
                   )
         (proclaim (str statname " drain") "base temporary effect"
                   {:level (Rand/d 10)
                    :lifetime (+ 5000 (* 2000 (Rand/r 5)))
-                   :parent-modifiers [(modifier stat (long* value 0.8))]}
+                   :parent-modifiers [(modifier stat (long* value 0.7))]}
                   )))))
 
 (defn define-effects [lib]
@@ -355,7 +352,7 @@
                :is-view-blocking false
                :is-blocking true
                :char (char \#)
-               :hps 30
+               :hps 10
                :z-order 60})))
 
 (defn define-doors [lib]
@@ -414,21 +411,55 @@
                                  :is-view-blocking false}})))
 
 
+(defn define-decorations [lib]
+  (-> lib 
+    (proclaim "base decoration" "base scenery" 
+              {:is-decoration true})
+    (proclaim "torture rack" "base decoration" 
+              {:char (char 0x04C1)
+               :colour-fg (colour 0xC0C0C0)})
+    (proclaim "old gravestone" "base decoration" 
+              {:char (char 0x043F)
+               :colour-fg (colour 0xA0A0A0)})
+    (proclaim "large candelabra" "base decoration" 
+              {:char (char 0x03A8)
+               :colour-fg (colour 0xFFFF00)})
+    (proclaim "strange rune" "base decoration" 
+              {:char (char 0x06DE)
+               :is-blocking false
+               :colour-fg (colour 0x8000FF)})
+    (proclaim "fountain of healing" "base decoration" 
+              {:char (char 0x046A)
+               :is-fountain true
+               :colour-fg (colour 0x00FF00)
+               :heal-amount-max 10
+               :on-use (fn [game app actor]
+                         (as-> game game
+                           (engine/message game actor (str "You feel refreshed by the healing waters!"))
+                           (engine/heal game actor (Rand/d (int (:heal-amount-max app))))
+                           (if (Rand/chance 0.15)
+                             (as-> game game
+                               (engine/message game actor (str "The fountain dries up."))
+                               (engine/transform game app "dry fountain"))
+                             game)))})
+    (proclaim "dry fountain" "base decoration" 
+              {:char (char 0x046A)
+               :colour-fg (colour 0xC0C0C0)
+               :on-use (fn [game app actor]
+                         (engine/message game actor "Sadly this fountain is all dried up..."))})))
+
 (defn define-apparatus [lib]
   (-> lib
     (proclaim "base apparatus" "base scenery" 
               {:is-apparatus true
                :on-use (fn [game app actor]
                          (engine/message game actor (str "You don't know how to use " (the-name game app) ".")))})
-    (proclaim "torture rack" "base apparatus" 
-              {:char (char 0x04C1)
-               :colour-fg (colour 0xC0C0C0)})
+    
     (proclaim "alchemy workbench" "base apparatus" 
               {:char (char 0x046C)
                :colour-fg (colour 0xFFFF00)
                :on-use (fn [game app actor]
                          (engine/message game actor (str "Press [c] to use " (the-name game app) ".")))})
-    
     (proclaim "analysis lab" "base apparatus" 
               {:char (char 0x0468)
                :colour-fg (colour 0x00FFFF)
@@ -475,6 +506,7 @@
   (-> lib
     (define-base-scenery)
     (define-apparatus)
+    (define-decorations)
     (define-stairs)
     (define-doors)))
 
@@ -486,26 +518,23 @@
   (when-not (and (vector? binds) (every? symbol? binds)) (error "consume function requires [game actor item] bindings")) 
   `(fn [~game ~item ~actor ]
      (as-> ~game ~game
-       (remove-thing ~game ~item)
-       ~@body
+       (remove-thing ~game ~item 1)
+       (let [~item (merge ~item {:number 1 :id nil})] 
+         (as-> ~game ~game 
+               ~@body))
        (engine/identify ~game ~item)
        )))
 
-
 (defn potion-effect-function [effect-name]
-  (fn [game potion target]
-    (as-> game game
-          (remove-thing game potion)
-          (engine/add-effect game target effect-name)
-          (engine/identify game potion)
-)))
-
+  (consume-function [game potion target]
+    (engine/add-effect game target effect-name)))
 
 (defn define-base-item [lib]
   (-> lib
     (proclaim "base item" "base thing" 
               {:is-item true
                :char (char \%)
+               :can-stack? default-can-stack?
                :z-order 20})
     (proclaim "base ingredient" "base item" 
               {:is-ingredient true
@@ -530,11 +559,13 @@
     (proclaim "base food" "base ingredient" 
               {:is-food true
                :is-ingredient false
+               :is-identified true   ;; don't need to identify food....
                :char (char 0x2663)
                :food-value 100
                :on-consume  (consume-function [game item actor]
                               (!+ actor :food (:food-value item))
-                              (engine/message game actor (str "Mmmm. " (engine/a-name game item) " .Tasty.")))
+                              (engine/message game actor 
+                                              (str "Mmmm. " (text/capitalise (engine/a-name game item)) ". Tasty.")))
                :colour-fg (colour 0xC00000) 
                :z-order 20})))
 
@@ -575,14 +606,15 @@
   ([lib]
     (as-> lib lib
       (proclaim lib "base stat potion" "base potion" {:freq 0.5})
-      (reduce (fn [lib stat] (proclaim-stat-potions lib stat)) lib (keys MAIN_STATS))))
+      (reduce (fn [lib stat] (proclaim-stat-potions lib stat)) lib MAIN-STATS)))
   ([lib stat]
-    (let [statname (:name (MAIN_STATS stat))]
+    (let [statname (:name (MAIN-STAT-INFO stat))]
       (-> lib
         (proclaim (str "gain " statname " potion") "base stat potion" 
               {:level (Rand/d 9)
                :on-consume  (consume-function [game item actor]
-                              (!+ actor stat (Rand/d 4)) (engine/message game actor (str "You feel you have gained in " statname "!")))})
+                              (!+ actor stat (Rand/d 4)) 
+                              (engine/message game actor (str "You feel you have gained in " statname "!")))})
         (proclaim (str statname " boost potion") "base stat potion" 
               {:level (Rand/d 9)
                :on-consume (potion-effect-function (str statname " boost"))})))))
@@ -607,7 +639,7 @@
                                  (!+ game actor :hps boost)
                                  (!+ game actor :hps-max boost)
                                  (engine/message game actor
-                                   "You feel amazingingly good..."))))})
+                                   "You feel amazingly good..."))))})
     (proclaim "speed gain potion" "base potion" 
               {:level (Rand/d 2 4) 
                :on-consume (consume-function [game item actor]
@@ -700,20 +732,23 @@
   (-> lib
     (proclaim "base herb" "base ingredient" 
               {:level 1
+               :is-herb true
                :char (char 0x1D67)
                :colour-fg (colour 0x00B030) 
                :unidentified-name "strange herb" 
                :food-value 1})
     (proclaim "fairgrass weed" "base herb" 
-              {})
+              {:level 1})
     (proclaim "ironroot herb" "base herb" 
-              {})
+              {:level (Rand/d 3)})
     (proclaim "copperleaf herb" "base herb" 
-              {})
+              {:level (Rand/d 5)})
     (proclaim "wolfsbane herb" "base herb" 
-              {})
+              {:level (Rand/d 7)})
     (proclaim "limegrass herb" "base herb" 
-              {})))
+              {:level (Rand/d 9)})
+    (proclaim "shire leaf" "base herb" 
+              {:level (Rand/d 10)})))
 
 (defn define-ingredients [lib]
   (-> lib
@@ -770,15 +805,24 @@
 (def ATT_NORMAL {:name "normal attack" 
                  :ASK 1.0 :DSK 0.75 :AST 1.0 
                  :damage-type :normal})
+(def ATT_KICK {:name "normal attack" 
+               :ASK 0.6 :DSK 0.3 :AST 0.5 
+               :damage-type :impact})
+(def ATT_CLAW {:name "normal attack" 
+               :ASK 0.7 :DSK 0.7 :AST 0.7 
+               :damage-type :normal
+               :hit-verb "claw"})
 
 (def ATT_BITE {:name "bite attack" 
-                 :ASK 1.0 :DSK 0.0 :AST 1.0   ;; no dsk - can't block with a bite!
-                 :damage-type :normal})
+               :hit-verb "bite" 
+               :ASK 1.0 :DSK 0.2 :AST 1.0   ;; low dsk - can't block with a bite!
+               :damage-type :normal})
 
 (def ATT_POISON_BITE {:name "poison bite" 
-                 :ASK 1.0 :DSK 0.0 :AST 0.75 
-                 :damage-type :normal
-                 :damage-effect "poisoned"})
+                      :hit-verb "bite"
+                      :ASK 1.0 :DSK 0.2 :AST 0.75 
+                      :damage-type :normal
+                      :damage-effect "poisoned"})
 
 (def ATT_SWORD {:name "sword" 
                 :ASK 1.2 :DSK 1.0 :AST 1.2 
@@ -789,10 +833,16 @@
               :damage-type :normal 
               :wield-types [:right-hand :left-hand]})
 (def ATT_MACE {:name "mace" 
-               :ASK 1.0 :DSK 0.5 :AST 1.5 
+               :ASK 1.0 :DSK 0.5 :AST 1.3 
+               :damage-type :impact 
+               :wield-types [:right-hand :left-hand]})
+(def ATT_CLUB {:name "club" 
+               :hit-verb "bash" 
+               :ASK 0.7 :DSK 0.4 :AST 1.0 
                :damage-type :impact 
                :wield-types [:right-hand :left-hand]})
 (def ATT_DAGGER {:name "dagger"
+                 :hit-verb "stab"
                  :ASK 1.2 :DSK 0.8 :AST 0.8 
                  :damage-type :normal 
                  :wield-types [:right-hand :left-hand]})
@@ -860,6 +910,60 @@
                :drop-type "[:is-item]"
                :on-action engine/monster-action})
     
+    ;; misc beasts
+    (proclaim "base beast" "base creature"
+              {:is-beast true
+               :aggro-range 6
+               :drop-chance 0.5
+               :drop-type "[:is-food]"})
+    (proclaim "bat" "base beast"
+              {:level 0
+               :confusion 40
+               :SK 4 :ST 3 :AG 9 :TG 3 :IN 3 :WP 5 :CH 5 :CR 3
+               :attack ATT_BITE
+               :hps 4
+               :char \b
+               :colour-fg (colour 0xA0A0A0)})
+    (proclaim "cave bat" "bat"
+              {:level 2
+               :confusion 30
+               :SK 5 :ST 6 :AG 9 :TG 6 :IN 3 :WP 8 :CH 5 :CR 3
+               :hps 6
+               :colour-fg (colour 0xA09080)})
+    (proclaim "giant bat" "bat"
+              {:level 5
+               :confusion 20
+               :SK 5 :ST 10 :AG 9 :TG 10 :IN 5 :WP 12 :CH 5 :CR 3
+               :hps 15
+               :colour-fg (colour 0x8090A0)}) 
+    (proclaim "vampyre bat" "bat"
+              {:level 7
+               :is-vampyre true
+               :confusion 5
+               :SK 7 :ST 7 :AG 13 :TG 9 :IN 5 :WP 12 :CH 8 :CR 6
+               :drop-chance 0.5
+               :drop-type "vampyre"
+               :hps 10
+               :colour-fg (colour 0xC04090)})
+     (proclaim "cave bear" "base beast"
+              {:level 6
+               :is-mammal true
+               :confusion 2
+               :SK 12 :ST 22 :AG 8 :TG 30 :IN 5 :WP 42 :CH 12 :CR 3
+               :hps 60
+               :attack ATT_CLAW
+               :char \B
+               :colour-fg (colour 0x906030)})
+     (proclaim "giant bear" "base beast"
+              {:level 8
+               :is-mammal true
+               :confusion 1
+               :SK 12 :ST 32 :AG 8 :TG 60 :IN 5 :WP 52 :CH 12 :CR 3
+               :hps 100
+               :attack ATT_CLAW
+               :char \B
+               :colour-fg (colour 0xC0B0A0)})
+    
     ;; rats
     (proclaim "base rat" "base creature" 
                    {:SK 4 :ST 3 :AG 6 :TG 2 :IN 1 :WP 5 :CH 2 :CR 2
@@ -914,7 +1018,7 @@
                     :hps 10
                     :char \s
                     :colour-fg (colour 0xE0E0C0)})
-    (proclaim "skeleton warrior" "base undead" 
+    (proclaim "skeleton warrior" "skeleton" 
                    {:level 7
                     :SK 15 :ST 15 :AG 10 :TG 15 :IN 0 :WP 0 :CH 0 :CR 0
                     :hps 20
@@ -925,17 +1029,28 @@
                    {:level 5
                     :SK 16 :ST 6 :AG 8 :TG 10 :IN 0 :WP 0 :CH 0 :CR 0
                     :hps 12
-                    :char \W
+                    :char \w
                     :colour-fg (colour 0xE0E0C0)
                     :attack (merge ATT_NORMAL {:damage-effect "weakened" :damage-effect-chance 0.3})})
-    (proclaim "skeleton hero" "base undead" 
+    (proclaim "skeleton hero" "skeleton" 
                    {:level 9
                     :SK 25 :ST 25 :AG 20 :TG 25 :IN 0 :WP 0 :CH 0 :CR 0
                     :hps 40       
                     :freq 0.4
                     :speed 200
-                    :char \S
+                    :char (char 0x0161) 
                     :colour-fg (colour 0xFFFFFF)})
+    (proclaim "vampyre" "base undead" 
+                   {:level 11
+                    :SK 25 :ST 25 :AG 40 :TG 30 :IN 30 :WP 30 :CH 0 :CR 0
+                    :is-vampyre true
+                    :is-intelligent true
+                    :hps 100            
+                    :speed 250
+                    :freq 0.3
+                    :char (char 0x1E7C) 
+                    :colour-fg (colour 0xC04090)
+                    :attack (merge ATT_NORMAL {:damage-effect "weakened!" :damage-effect-chance 0.2})})
     (proclaim "spectre" "base undead" 
                    {:level 10
                     :SK 25 :ST 25 :AG 20 :TG 25 :IN 0 :WP 0 :CH 0 :CR 0
@@ -955,14 +1070,15 @@
               {:is-goblin true
                :char \g})
     (proclaim "small goblin" "base goblin" 
-              {:level 0
+              {:level 1
                :SK 5 :ST 3 :AG 8 :TG 3 :IN 5 :WP 3 :CH 5 :CR 2
                :hps 4
                :colour-fg (colour 0x20C000)})
     (proclaim "goblin" "base goblin" 
-              {:level 1
+              {:level 2
                :SK 5 :ST 5 :AG 8 :TG 5 :IN 5 :WP 5 :CH 5 :CR 3
                :hps 6
+               :attack ATT_DAGGER
                :colour-fg (colour 0x009000)})
     (proclaim "orc" "base goblin" 
               {:level 4
@@ -976,13 +1092,13 @@
                :SK 9 :ST 13 :AG 9 :TG 18 :IN 5 :WP 12 :CH 3 :CR 4
                :hps 20
                :char \o
-               :colour-fg (colour 0x406040)})
+               :colour-fg (colour 0x606060)})
     (proclaim "orc champion" "base goblin" 
               {:level 8
                :SK 16 :ST 19 :AG 16 :TG 18 :IN 4 :WP 8 :CH 3 :CR 4
                :hps 25
                :speed 150
-               :char \o
+               :char (char 0x00F5)
                :freq 0.4
                :attack ATT_SWORD
                :colour-fg (colour 0x80C000)})
@@ -993,63 +1109,98 @@
                :attack ATT_MACE
                :char \T
                :colour-fg (colour 0x507050)})
+    (proclaim "troll king" "base goblinoid" 
+              {:level 11
+               :SK 18 :ST 48 :AG 19 :TG 57 :IN 10 :WP 42 :CH 13 :CR 6
+               :hps 100
+               :speed 150
+               :attack ATT_MACE
+               :char (char 0x1E6A) 
+               :colour-fg (colour 0xA0A060)})
     
-    ;; golems
-    (proclaim "base golem" "base creature" 
+    
+    ;; golems and constructs
+    (proclaim "base construct" "base creature"
+              {:attack ATT_NORMAL
+               :is-construct true
+               :is-living false
+                         })
+    (proclaim "base golem" "base construct" 
                    {:SK 15 :ST 20 :AG 8 :TG 30 :IN 0 :WP 16 :CH 0 :CR 0
-                    :attack ATT_NORMAL
-                    :is-living false
                     :speed 80
                     :hps 40
-                    :char \G
+                    :char \G 
                     :colour-fg (colour 0xC0C0C0)})
     (proclaim "golem" "base golem" 
-                   {:level 8})
-    (proclaim "immortal golem" "base golem" 
-                   {:is-immortal true
-                    :level 10
+                   {:level 8
+                    :char \G })
+    (proclaim "immortal golem" "golem" 
+                   {:level 10
+                    :is-immortal true
                     :freq 0.1
+                    :char (char 0x01E6) 
                     :colour-fg (colour 0xFFFFFF)})
     
     ;; snakes
+    (proclaim "base reptile" "base creature"
+              {:is-reptile true
+               :damage-factor-poison 0.0})
     (proclaim "base snake" "base creature" 
                    {:level 1
-                    :SK 5 :ST 3 :AG 8 :TG 4 :IN 2 :WP 6 :CH 4 :CR 1
+                    :SK 5 :ST 3 :AG 6 :TG 3 :IN 2 :WP 6 :CH 4 :CR 1
+                    :aggro-range 4
                     :is-snake true
-                    :is-reptile true
                     :attack ATT_BITE
                     :hps 3
                     :char \s
                     :colour-fg (colour 0x60C060)})
     (proclaim "grass snake" "base snake"
                    {})
-    (proclaim "white snake" "base snake"
+    (proclaim "snake" "base snake"
                    {:level 2
-                    :colour-fg (colour 0xFFFFFF)
+                    :hps 5
+                    :colour-fg (colour 0x409040)})
+    (proclaim "red snake" "base snake"
+                   {:level 3
+                    :colour-fg (colour 0xC00000)
                     :attack (merge ATT_BITE {:damage-effect "confused!" :damage-effect-chance 40})})
     (proclaim "cobra" "base snake"
                    {:level 5
                     :SK 4 :ST 3 :AG 10 :TG 7 :IN 4 :WP 9 :CH 8 :CR 3
                     :char \c
                     :hps 15
-                    :attack (merge ATT_POISON_BITE {:damage-effect "poisoned" :damage-effect-chance 40})
+                    :attack (merge ATT_POISON_BITE {:damage-effect "poisoned" 
+                                                    :damage-effect-chance 40})
                     :colour-fg (colour 0xD0A060)})
     (proclaim "king cobra" "base snake"
                    {:level 7
                     :SK 6 :ST 5 :AG 20 :TG 17 :IN 4 :WP 19 :CH 8 :CR 3
-                    :char \C
+                    :char (char 0x010D)
                     :hps 25
                     :attack (merge ATT_POISON_BITE {:damage-effect "poisoned!" :damage-effect-chance 40})
                     :colour-fg (colour 0xD0A060)})
     (proclaim "wyrm" "base snake"
                    {:level 10
                     :SK 16 :ST 15 :AG 20 :TG 37 :IN 14 :WP 29 :CH 12 :CR 8
-                    :char \W
+                    :char (char 0x0174)
+                    :ARM 15
                     :freq 0.3
                     :speed 200
-                    :hps 50
+                    :hps 60
                     :attack (merge ATT_POISON_BITE {:damage-effect "poisoned!!" :damage-effect-chance 40})
-                    :colour-fg (colour 0xD0A060)})))
+                    :colour-fg (colour 0xF0A060)})
+    (proclaim "dragon" "base reptile"
+                   {:level 11
+                    :SK 26 :ST 25 :AG 20 :TG 70 :IN 24 :WP 49 :CH 26 :CR 30
+                    :ARM 30
+                    :char (char 0x1E0A)
+                    :is-intelligent true
+                    :aggro-range nil
+                    :freq 0.1
+                    :speed 250
+                    :hps 250
+                    :attack (merge ATT_POISON_BITE {:damage-effect "poisoned!!" :damage-effect-chance 40})
+                    :colour-fg (colour 0xFFFF00)})))
 
 (defn rhs "Random hero stat" [] (+ 5 (Rand/r 8)))
 
@@ -1070,8 +1221,8 @@
                                       (! hero :char \%)
                                       (! hero :is-corpse true)
                                       (assoc game :game-over true)))
-                    :hps (+ 10 (* (Rand/d 4) (Rand/d 5)))
-                    :ARM (Rand/d 3)
+                    :hps (+ 10 (* (Rand/d 5) (Rand/d 5)))
+                    :ARM (Rand/r 4)
                     :attack ATT_NORMAL
                     :grammatical-person :second
                     :char \@
@@ -1096,7 +1247,9 @@
       (loop [v nil cumfreq 0.0 objs objs]
         (if objs
           (let [o (first objs)
-                valid? (and (pred o) (>= level (or (:level-min o) 0)))
+                valid? (and (pred o) (>= (or (:level-max o) Long/MAX_VALUE) 
+                                         level 
+                                         (or (:level-min o) 0)))
                 freq-o (if valid? (double (:freq o)) 0.0)
                 keeper? (< (* (Rand/nextDouble) (+ cumfreq freq-o)) freq-o)]
             (recur (if keeper? o v) (+ cumfreq freq-o) (next objs)))

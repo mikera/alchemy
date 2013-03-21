@@ -17,25 +17,6 @@
     (or (and t (mm/place-thing game l1 l2 t))
         game)))
 
-(defn generate-1
-  "Main dungeon generation algorithm"
-  [game]
-  (as-> game game
-    (mm/fill-block game (loc -4 -4 0) (loc 12 4 0) (lib/create game "wall"))
-    (mm/fill-block game (loc -3 -3 0) (loc 3 3 0) (lib/create game "floor"))
-    (mm/fill-block game (loc 4 0 0) (loc 4 0 0) (lib/create game "floor"))
-    (mm/fill-block game (loc 5 -3 0) (loc 11 3 0) (lib/create game "floor"))
-    (maybe-place-thing game (loc -3 -3 0) (loc 11 3 0) (lib/create game "[:is-apparatus]"))
-    (maybe-place-thing game (loc -3 -3 0) (loc 11 3 0) (lib/create game "rat"))
-    (maybe-place-thing game (loc -3 -3 0) (loc 11 3 0) (lib/create game "[:is-reptile]"))
-    (maybe-place-thing game (loc -3 -3 0) (loc 11 3 0) (lib/create game "[:is-potion]"))
-    (maybe-place-thing game (loc -3 -3 0) (loc 11 3 0) (lib/create game "[:is-potion]"))
-    (maybe-place-thing game (loc -3 -3 0) (loc 11 3 0) (lib/create game "[:is-potion]"))
-    (maybe-place-thing game (loc -3 -3 0) (loc 11 3 0) (lib/create game "magic mushroom"))
-    (maybe-place-thing game (loc -3 -3 0) (loc 11 3 0) (lib/create game "slime mould"))
-    (maybe-place-thing game (loc -3 -3 0) (loc 11 3 0) (lib/create game "[:is-food]"))
-    (maybe-place-thing game (loc 4 0 0) (loc 4 0 0) (lib/create game "door"))))
-
 (defn ensure-door 
   ([game loc]
     (if (seq (get-things game loc))
@@ -52,41 +33,38 @@
   (let [lmin (:lmin room)
         lmax (:lmax room)]
     (let [mtype (Rand/pick ["[:is-undead]" "[:is-creature]" "[:is-goblinoid]" "[:is-snake]"])]
-      (reduce 
-        (fn [game _]
-          (and-as-> game game
-                    (maybe-place-thing game lmin lmax (lib/create game mtype (- (lmin 2))))
-                    (maybe-place-thing game lmin lmax (lib/create game "[:is-item]" (- (lmin 2))))))
-        game
-        (range (Rand/d 10))))))
+      (as-> game game
+        (mm/scatter-things game lmin lmax (Rand/d 10) (lib/create game "[:is-item]" (- (lmin 2))))
+        (mm/scatter-things game lmin lmax (Rand/d 2 6) (lib/create game mtype (- (lmin 2))))))))
 
 (defn decorate-store-room [game room type]
   (let [lmin (:lmin room)
         lmax (:lmax room)]
-    (reduce 
-      (fn [game _]
-        (and-as-> game game
-          (maybe-place-thing game lmin lmax (lib/create game type))))
-      game
-      (range (Rand/d 12)))))
+    (mm/scatter-things game lmin lmax (Rand/d 10) #(lib/create game type))))
 
 (defn decorate-lab [game room]
-  (let [lmin (:lmin room)
-        lmax (:lmax room)]
+  (let [lmin (:lmin room) lmax (:lmax room)]
     (and-as-> game game
-      (reduce 
-        (fn [game _]
-          (maybe-place-thing game lmin lmax (lib/create game "[:is-potion]")))
-        game
-        (range (Rand/d 4)))
-      (maybe-place-thing game lmin lmax (lib/create game "[:is-apparatus]")))))
+      (maybe-place-thing game (loc-add lmin 1 1 0) (loc-add lmax -1 -1 0)
+                         (lib/create game "[:is-apparatus]"))
+      (mm/scatter-things game lmin lmax (Rand/d 4) #(lib/create game "[:is-potion]")))))
+
+(defn decorate-fountain-room [game room]
+  (let [lmin (:lmin room) lmax (:lmax room)]
+    (and-as-> game game
+      (maybe-place-thing game (loc-add lmin 1 1 0) (loc-add lmax -1 -1 0) 
+                         (lib/create game "[:is-fountain]"))
+      (mm/fill-block game lmin lmax (lib/create game "moss floor"))
+      (mm/scatter-things game lmin lmax (Rand/d 8) #(lib/create game "[:is-herb]")))))
 
 (defn decorate-normal-room [game room]
   (let [lmin (:lmin room)
         lmax (:lmax room)]
     (and-as-> game game
-      (if (Rand/chance 0.3) (maybe-place-thing game lmin lmax (lib/create game "[:is-creature]" (- (lmin 2)))) game)        
-      (if (Rand/chance 0.5) (maybe-place-thing game lmin lmax (lib/create game "[:is-potion]" (- (lmin 2)))) game)
+      (if (Rand/chance 0.3) (maybe-place-thing game (loc-add lmin 1 1 0) (loc-add lmax -1 -1 0)  
+                                               (lib/create game "[:is-decoration]" (- (lmin 2)))) game)        
+      (if (Rand/chance 0.5) (maybe-place-thing game lmin lmax (lib/create game "[:is-creature]" (- (lmin 2)))) game)        
+      (if (Rand/chance 0.5) (maybe-place-thing game lmin lmax (lib/create game "[:is-item]" (- (lmin 2)))) game)
       )))
 
 (defn decorate-designer-room [game room]
@@ -95,6 +73,8 @@
         [x1 y1 z] lmin
         [x2 y2 z] lmax]
     (cond 
+      (Rand/chance 0.3)
+        (decorate-fountain-room game room)
       (Rand/chance 0.3)
         (let [pillar (Rand/pick ["wall" "pillar"])]
           (as-> game game
@@ -107,19 +87,19 @@
                        (loc (inc x1) (inc y1) z)
                        (loc (dec x2) (dec y2) z)
                        (lib/create game (Rand/pick ["murky pool" "shallow pool" "deep pool" "magma pool"]))))))
-;
+
 (defn decorate-room [game room]
   (and-as-> game game 
     (cond
-      (Rand/chance 0.03)
+      (Rand/chance 0.06)
         (decorate-lair game room)
-      (Rand/chance 0.2)
+      (Rand/chance 0.3)
         (decorate-normal-room game room)
-      (Rand/chance 0.2)
+      (Rand/chance 0.15)
         (decorate-store-room game room (Rand/pick ["[:is-food]" "[:is-potion]" "[:is-mushroom]" "[:is-ingredient]" "[:is-herb]"]))
       (Rand/chance 0.07)
         (decorate-lab game room)
-      (Rand/chance 0.1)
+      (Rand/chance 0.2)
         (decorate-designer-room game room)
       :else
         ;; an empty room
@@ -321,19 +301,25 @@
             (error "Can't place exit staircase!!"))
           (assoc game :start-location (location game (:last-added-id game))))))
 
+
+(def DUNGEON_MIN (loc -35 -25 -11))
+(def DUNGEON_MAX (loc 35 25 -1))
+(def OBJECTIVE_LEVEL -10)
+
 (defn place-philosophers-stone [game lmin lmax]
   (let [[x1 y1 z1] lmin
         [x2 y2 z2] lmax]
     (as-> game game
           (or 
-            (or-loop [1000] (mm/place-thing game lmin (loc x2 y2 z1) (lib/create game "The Philosopher's Stone")))
+            (or-loop [1000] (mm/place-thing game (loc x1 y1 OBJECTIVE_LEVEL) (loc x2 y2 OBJECTIVE_LEVEL) (lib/create game "The Philosopher's Stone")))
             (error "Can't place philosopher's stone!!")))))
+
 
 (defn generate-dungeon 
   "Attempts to generate dungeon. May return nil on failure" 
   [game]
-   (let [lmin (loc -30 -30 -10) 
-         lmax (loc 30 30 0)]
+   (let [lmin DUNGEON_MIN
+         lmax DUNGEON_MAX]
      (and-as-> game game
               (assoc game :volume {:min lmin :max lmax})
               (mm/fill-block game (loc-dec lmin) (loc-inc lmax) (lib/create game "rock wall"))
@@ -347,8 +333,7 @@
 (defn generate 
    "Main dungeon generation algorithm"
   [game]
-  (let [lmin (loc -30 -30 -10)
-        lmax (loc 30 30 0)]
+  (let []
     (loop [game game i 100]
           (or (generate-dungeon game)     
               (when (> i 0)

@@ -2,6 +2,7 @@
   (:require [mikera.cljutils.find :as find]) 
   (:use mikera.orculje.util)
   (:use mikera.orculje.core)
+  (:use mikera.orculje.rules)
   (:use mikera.cljutils.error)
   (:require [mikera.orculje.engine :as en])
   (:require [mikera.alchemy.config :as config])
@@ -40,12 +41,7 @@
   (text/a-name game thing))
 
 (defn base-name [game thing]
-  (text/base-name game thing))
-
-(defn check 
-  "Random skill check"
-  ([a b]
-    (> a (* (Rand/nextDouble) (+ a b)))))
+  (text/num-name game thing))
 
 (defn is-hostile [a b]
   (or (:is-hero a) (:is-hero b)))
@@ -63,7 +59,7 @@
                 (:name thing-or-name))
         it (find/find-first #(= tname (:name %)) (contents hero))]
     (if it
-      (remove-thing game it)
+      (remove-thing game it 1)
       game)))
 
 (defn remove-items [game hero things-or-names]
@@ -198,9 +194,13 @@
     game 
     things))
 
-(defn is-identified? [game thing]
+(defn test-identified? [game thing]
   (or (:is-identified thing)
       (:is-identified ((:objects (:lib game)) (:name thing)))))
+
+(defn is-recipe-known? [game thing]
+  (or (:is-recipe-known thing)
+      (:is-recipe-known ((:objects (:lib game)) (:name thing)))))
 
 (defn identify-recipe [game thing]
   (let [name (:name thing)]
@@ -226,9 +226,6 @@
 ;; ======================================================
 ;; damage and healing
 
-(def DAMAGE-TYPES {:poison {}
-                   :normal {}})
-
 
 (defn add-effect 
   "Apples an effect to a target. Effect may be a string or a function"
@@ -238,8 +235,12 @@
       (add-thing game target (create game effect)))))
 
 (defn transform [game target type]
-  (let [type (if (string? type) (create game type) type)]
-    (merge-thing game target type)))
+  (if-let [t (if (string? type) (create game type) type)]
+    (do 
+      ;;(println (str "target" (into {} target)))
+      ;;(println (str "type" (into {} t)))
+      (merge-thing game target t))
+    (error "Can't transform into: " type)))
 
 (defn die 
   ([game target]
@@ -260,6 +261,7 @@
         (if (>= dam hps)
           (die game target)
           game)))))
+
 
 (defn heal [game target amount]
   (if (:is-undead target)
@@ -306,14 +308,17 @@
     (apply max (map #(or (:DSK %) 0)  defs))))
 
 (defn hit [game actor target weapon critical?]
-  (let [ast (* (? actor :ST) (? weapon :AST))
-        hit-verb "hit"
+  (let [ast (double (* (? actor :ST) (? weapon :AST)))
+        hit-verb (or (:hit-verb weapon) "hit")
         hit-verb (if critical? (str "skillfully " hit-verb) hit-verb)
         dam-type (or (:damage-type weapon) :normal)
-        arm (+ (* 0.5 (or (? target :TG) 0)) (or (? target :ARM) 0))
-        dam (* ast (Rand/nextDouble))
-        dam (if critical? (+ dam (* ast (Rand/nextDouble))) dam) 
-        dam (long* dam (/ dam (+ dam arm)))
+        arm (calc-armour game target dam-type)
+        base-dam (* ast (Rand/nextDouble))
+        base-dam (max 0 (- base-dam (* arm (Rand/nextDouble))))
+        base-dam (if critical? 
+                   (+ base-dam (* ast (Rand/nextDouble))) 
+                   base-dam) 
+        dam (calc-damage game target base-dam dam-type)
         dam-str (cond 
                   (> dam 0) 
                     (str " for " dam " damage"
@@ -355,7 +360,7 @@
            (as-> game game
              (message game actor (str (text/verb-phrase game :the actor "miss" :the target) "."))
              (message game target (str (text/verb-phrase game :the actor "miss" :the target) "."))) 
-        (not (check ask dodge))
+        (not (check ask dsk))
            (as-> game game
              (message game actor (str (text/verb-phrase game :the target "block") " your attack."))
              (message game target (str (text/verb-phrase game :the target "block") " the attack of " (the-name game actor) "."))) 
@@ -388,8 +393,8 @@
   (let [tloc (location game target-or-loc)
         throw-fn (or (:on-thrown missile) default-throw)] 
     (as-> game game
-      (remove-thing game missile)
-      (throw-fn game missile actor tloc)
+      (remove-thing game missile 1)
+      (throw-fn game (merge missile {:number 1 :id nil}) actor tloc)
       (use-aps game actor 100))))
 
 ;; ======================================================
@@ -430,9 +435,10 @@
 
 (defn try-open [game actor door]
   (as-> game game
+    (use-aps game actor 100)
     (if (? door :is-locked)
       (message game actor (str (text/verb-phrase game :the door) " is locked."))
-      ((:on-open door) game door actor))    ))
+      ((:on-open door) game door actor))))
 
 (defn try-consume [game actor item]
   (as-> game game
@@ -445,7 +451,7 @@
   (as-> game game
     (if-let [on-use (? thing :on-use)]
       (on-use game thing actor)
-      (message game actor (str "You have no idea what to do with " (the-name game thing) ".")))))
+      (message game actor (str "You are unable to make use of " (the-name game thing) ".")))))
 
 (defn try-attack [game thing target]
   (as-> game game
@@ -475,15 +481,18 @@
       (try-attack game thing target)
     (and (:is-intelligent thing) (:is-door target))
       (try-open game thing target)
-    :else
-      (try-use game thing target)))
+    (:is-hero thing)
+      (try-use game thing target)
+    :else 
+      (use-aps game thing 100)))
 
 
-(defn can-move 
+(defn can-move-to 
   "Returns true if a move or attack to a target location is possible."
   ([game m tloc]
   (let [bl (get-blocking game tloc)]
     (if (or (not bl) 
+            (and (:is-intelligent m) (:is-door bl))
             (is-hostile m bl))
       true
       nil))))
@@ -497,7 +506,7 @@
       (use-aps game thing 100)    
       (move-thing game thing loc)
       (if-let [items (and (:is-hero thing) (seq (filter :is-item (get-things game loc))))]
-        (message game thing (str "There is " 
+        (message game thing (str "There " (if (== 1 (get-number (first items))) "is " "are ") 
                                  (text/and-string (map (partial a-name game) items)) 
                                  " here."))
         game))))
@@ -520,13 +529,13 @@
                   (check (or (? game thing :confusion) 0) (? thing :WP))) (DIRECTIONS (Rand/r 8)) dir)
         tloc (loc-add loc dir)
         dz (dir 2)]
-    (if (not (== 0 (dir 2)))
+    (if (not (== 0 dz))
       (if-let [stairs (find-nearest-thing game :is-stairs thing 0)]
         (cond 
           (= dir (:move-dir stairs)) (try-move game thing tloc)
           (and (:is-hero thing) (= "exit staircase" (:name stairs))) (try-exit game thing)
           :else (message game thing (str "Cannot go " (if (> dz 0) "up" "down") " here")))
-        (if config/WALK_THROUGH_LEVELS
+        (if (and (:is-hero thing) config/WALK_THROUGH_LEVELS)
           (try-move game thing tloc)
           (message game thing "There are no stairs here!")))
       (try-move game thing tloc))))
@@ -540,7 +549,7 @@
     (let [loc (location game m)
           tloc (loc-add loc dir)]
       ;;(println (str (:name m) " considering direction " dir))
-      (if (can-move game m tloc)
+      (if (can-move-to game m tloc)
         (try-move-dir game m dir)
         nil))))
 
@@ -550,20 +559,29 @@
   ([game m]
     ;;(println (str "monster thinking: " (:name m)))
     (let [m (get-thing game m)
-          loc (location game m)]
-      (if (is-square-visible? game loc)
-        (let [hloc (hero-location game)
-              dir (direction loc hloc)
+          loc (location game m)
+          tloc (:target-location m)
+          hloc (hero-location game)
+          same-level? (== (hloc 2) (loc 2))
+          hloc (or (and same-level? (is-square-visible? game loc) hloc)
+                   tloc)]
+      (if hloc
+        (let [dir (direction loc hloc)
               di (or (REVERSE-DIRECTIONS dir) 
                      (do 
                        ;;(println "picking random direction") 
-                       (Rand/r 8)))]
+                       (Rand/r 8)))
+              game (if same-level? (! game m :target-location hloc) game)]
           (or 
             (consider-move-dir game m dir)
             (consider-move-dir game m (DIRECTIONS (mod (inc di) 8)))
             (consider-move-dir game m (DIRECTIONS (mod (dec di) 8)))
+            (consider-move-dir game m (DIRECTIONS 8)) 
+            (consider-move-dir game m (DIRECTIONS 9))
             (consider-move-dir game m (DIRECTIONS (Rand/r 8)))
-            (wait game m)))
-        (if (Rand/chance 0.2)
-          (try-move game m (loc-add loc (DIRECTIONS (Rand/r 8))))
+            (as-> game game
+              (! game m :target-location nil)
+              (wait game m))))
+        (if (Rand/chance 0.1)
+          (try-move-dir game m (DIRECTIONS (Rand/r 10)))
           game)))))

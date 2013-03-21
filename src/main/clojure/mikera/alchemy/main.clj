@@ -197,9 +197,11 @@
 
 ;; ========================================================
 ;; command
-
+;
 (def COMMANDS
-  [["a" "Use an analysis lab to identify items and their composition"]
+  [["Direction keys" "Move around map / attack / open doors"]
+   []
+   ["a" "Use an analysis lab to identify items and their composition"]
    ["c" "Use an alchemy workbench to craft potions"]
    ["d" "Drop an item"]
    ["e" "Eat a food item"]
@@ -210,7 +212,13 @@
    ["p" "Pick up an item"]
    ["q" "Quaff potion"]
    ["t" "Throw something"]
+   ["<" "Go up stairs / ramp"]
+   [">" "Go down stairs/ramp"]
+   ["," "Quick pickup (picks up first available item on floor)"]
+   ["." "Wait a short time at this location"]
+   []
    ["R" "Restart the game"]
+   ["?" "Show this screen (command help)"]
   ])
 
 (defn show-commands [state]
@@ -222,7 +230,8 @@
     (.setBackground jc ^Color (colour 0x002010))   
     (gui/draw jc 1 0 "Alchemy help: commands")
     (dotimes [i (count COMMANDS)]
-      (gui/draw jc 3 (+ 2 i) (str ((COMMANDS i) 0) "  =  " ((COMMANDS i) 1))))
+      (when (seq (COMMANDS i))
+        (gui/draw jc 3 (+ 2 i) (str ((COMMANDS i) 0) "  =  " ((COMMANDS i) 1)))))
 
     (reset! (:event-handler state)
 	          (fn [^String k]
@@ -281,8 +290,16 @@
                            (if (< (+ pos 25) c) "[DOWN for more]  " "")))
     (.repaint jc)))
 
+(def last-item-pos (atom 0))
+(defn select-item-pos [inv]
+  (let [old-pos (long @last-item-pos)
+        c (count inv)]
+    (if (< old-pos c)
+      old-pos
+      0)))
 
 (defn item-select-handler [state msg items pos action]
+  (reset! last-item-pos pos)
   (let [c (count items)]
     (redraw-item-select-screen state msg items pos)
 	  (reset! (:event-handler state)
@@ -291,9 +308,9 @@
 	              (cond 
 	                (and (>= sel 0) (< (+ pos sel) c))
 	                  (action (+ sel pos))
-	                (and (> pos 0) (.contains "124" k))
+	                (and (> pos 0) (.contains "784" k))
                     (item-select-handler state msg items (- pos 26) action)
-                  (and (< (+ pos 26) c) (.contains "689" k))
+                  (and (< (+ pos 26) c) (.contains "623" k))
                     (item-select-handler state msg items (+ pos 26) action)  
 	                (= "Q" k)
 	                  (main-handler state)
@@ -304,15 +321,15 @@
 ;; direction selection
 
 (def move-dir-map
-  {"1" (loc -1 -1 0)
-   "2" (loc 0 -1 0)
-   "3" (loc 1 -1 0)
+  {"1" (loc -1 1 0)
+   "2" (loc 0 1 0)
+   "3" (loc 1 1 0)
    "4" (loc -1 0 0)
    "5" (loc 0 0 0)
    "6" (loc 1 0 0)
-   "7" (loc -1 1 0)
-   "8" (loc 0 1 0)
-   "9" (loc 1 1 0)
+   "7" (loc -1 -1 0)
+   "8" (loc 0 -1 0)
+   "9" (loc 1 -1 0)
    "<" (loc 0 0 1)
    ">" (loc 0 0 -1)})
 
@@ -384,7 +401,7 @@
     (.setBackground jc ^Color (colour 0x200000))
     (gui/draw jc 1 0 msg)
     (gui/draw jc 3 1 
-              (mikera.orculje.text/capitalise (engine/a-name game dthing))) 
+              (mikera.orculje.text/capitalise (engine/base-name game dthing))) 
     (draw-crosshairs jc cx cy)
     (reset! (:event-handler state)
 	          (fn [^String k]
@@ -425,7 +442,7 @@
                                  (engine/base-name game p)
                                  (if (engine/has-ingredients? game hero p)
                                    " [OK]" " [ingred. missing]"))) inv))
-                      0
+                      (select-item-pos inv) 
                       (fn [n] 
                         (swap! (:game state) world/handle-alchemy (inv n))
                         (main-handler state))))) 
@@ -435,7 +452,9 @@
   (let [game @(:game state)
         hero (engine/hero game)
         inv (vec (filter 
-                   (fn [p] (and (:is-item p) (not (engine/is-identified? game p))))
+                   (fn [p] (and (or (:is-potion p) (:is-ingredient p))
+                                (or (not (is-identified? game p))
+                                    (and (:is-potion p) (not (engine/is-recipe-known? game p))))))
                    (contents hero)))]
     (cond
       (== 0 (count inv))
@@ -445,7 +464,7 @@
       (find-nearest-thing game (name-pred "analysis lab") hero 1)
         (item-select-handler state "Analyse an item:" 
                            (vec (map (partial engine/base-name game) inv))
-                           0
+                           (select-item-pos inv) 
                            (fn [n] 
                              (swap! (:game state) world/handle-analyse (inv n))
                              (main-handler state)))
@@ -460,7 +479,7 @@
         inv (vec (filter :is-item (contents hero)))]
     (item-select-handler state "Drop an item:" 
                       (vec (map (partial engine/base-name game) inv))
-                      0
+                      (select-item-pos inv) 
                       (fn [n] 
                         (swap! (:game state) world/handle-drop (inv n))
                         (main-handler state))))) 
@@ -471,7 +490,7 @@
         inv (vec (filter :is-food (contents hero)))]
     (item-select-handler state "Eat an item:" 
                       (vec (map (partial engine/base-name game) inv))
-                      0
+                      (select-item-pos inv) 
                       (fn [n] 
                         (swap! (:game state) world/handle-consume (inv n))
                         (main-handler state))))) 
@@ -483,7 +502,7 @@
         inv (vec (filter :is-potion (contents hero)))]
     (item-select-handler state "Quaff a potion:" 
                       (vec (map (partial engine/base-name game) inv))
-                      0
+                      (select-item-pos inv) 
                       (fn [n] 
                         (swap! (:game state) world/handle-consume (inv n))
                         (main-handler state))))) 
@@ -494,7 +513,7 @@
         inv (vec (filter :is-item (contents hero)))]
     (item-select-handler state "Examine your inventory:" 
                       (vec (map (partial engine/base-name game) inv))
-                      0
+                      (select-item-pos inv) 
                       (fn [n] (main-handler state))))) 
 
 (defn choose-pickup [state]
@@ -502,7 +521,9 @@
         inv (vec (filter :is-item (get-things game (engine/hero-location game))))]
     (cond 
       (== 0 (count inv))
-        (swap! (:game state) world/message "There is nothing here to pick up.")
+        (do
+          (swap! (:game state) world/message "There is nothing here to pick up.")
+          (main-handler state))
       (== 1 (count inv))
         (do 
           (swap! (:game state) world/handle-pickup (inv 0))
@@ -513,6 +534,16 @@
                       (fn [n] 
                         (swap! (:game state) world/handle-pickup (inv n))
                         (main-handler state)))))) 
+
+(defn quick-pickup [state]
+  (let [game @(:game state)
+        inv (vec (filter :is-item (get-things game (engine/hero-location game))))]
+    (cond 
+      (== 0 (count inv))
+        (swap! (:game state) world/message "There is nothing here to pick up.")
+      :else (do 
+              (swap! (:game state) world/handle-pickup (inv 0))
+              (main-handler state))))) 
 
 (defn choose-throw-target [state missile]
   (let [game @(:game state)]
@@ -535,7 +566,7 @@
         inv (vec (filter :is-item (contents hero)))]
     (item-select-handler state "Select an item to throw:" 
                       (vec (map (partial engine/base-name game) inv))
-                      0
+                      (select-item-pos inv) 
                       (fn [n] 
                         (choose-throw-target state (inv n)))))) 
 
@@ -593,7 +624,8 @@
           (or (= "R" k) (and game-over? (= "r" k))) 
                     (if game-over?
                       (restart state)
-                      (do-confirm state "Restart game: are you sure (y/n)" #(restart state)))
+                      (do-confirm state "Restart game: are you sure (y/n)" 
+                                  #(restart state)))
           (= "?" k) (show-commands state)
           (= "i" k) (show-inventory state)
           (= "l" k) (do-look state)
@@ -602,7 +634,8 @@
           
           (.contains "12346789<>" k)
             (do
-              (swap! (:game state) world/handle-move (or (move-dir-map k) (error "direction not recognised [" k "]")))
+              (swap! (:game state) world/handle-move (or (move-dir-map k) 
+                                                         (error "direction not recognised [" k "]")))
               (redraw-screen state))
           (.contains ".5" k) 
             (do
@@ -612,9 +645,10 @@
           (= "c" k) (choose-alchemy state)
           (= "d" k) (choose-drop state)
           (= "e" k) (choose-eat state)
+          (= "p" k) (choose-pickup state)
           (= "q" k) (choose-quaff state)
           (= "o" k) (choose-open state)
-          (.contains ",p" k) (choose-pickup state)
+          (= "," k) (quick-pickup state)
           (= "t" k) (choose-throw state)
           
           :else
@@ -656,8 +690,8 @@
       (gui/add-input-binding comp (gui/keystroke k) (make-input-action state (str k))))
     (doseq [[^KeyEvent ke k] {KeyEvent/VK_LEFT "4"
                               KeyEvent/VK_RIGHT "6"
-                              KeyEvent/VK_UP "2"
-                              KeyEvent/VK_DOWN "8"
+                              KeyEvent/VK_UP "8";
+                              KeyEvent/VK_DOWN "2"
                               KeyEvent/VK_ESCAPE "Q"}]
       (gui/add-input-binding comp (gui/keystroke-from-keyevent ke) (make-input-action state (str k))))))
 
@@ -705,10 +739,14 @@
     (let [^JFrame frame (launch s)]
       (.setDefaultCloseOperation frame JFrame/EXIT_ON_CLOSE))))
 
+(defmacro dog [& body]
+  `(let [~'game @(:game ~'s)
+         ~'hero (engine/hero ~'game)]
+     ~@body))
+
 (defmacro go [& body]
-  `(let [game# @(:game ~'s)
-         ~'hero (engine/hero game#)]
+  `(dog
      (reset! (:game ~'s) 
-       (as-> game# ~'game
+       (as-> ~'game ~'game
              ~@body))
      (main-handler ~'s)))
