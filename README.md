@@ -17,9 +17,17 @@ by Mike Anderson
 
 If you just want to play the game, you can get the compiled .jar file here:
 
-    http://dl.dropbox.com/u/6465582/alchemy.jar
+ - http://dl.dropbox.com/u/6465582/alchemy-latest.jar  (latest version with fixes)
+ - http://dl.dropbox.com/u/6465582/alchemy.jar  (original 7DRL version)
     
 You should be able to run the file either by double clicking it or using the command `java -jar alchemy.jar`. You will need to have Java 1.6 or above installed.
+
+## More infomation
+
+Blog posts about the development / design of alchmey can be found on the Creative Clojure blog:
+
+ - http://clojurefun.wordpress.com/2013/03/
+
 
 ## Build instructions
 
