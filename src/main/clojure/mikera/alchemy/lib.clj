@@ -793,6 +793,8 @@
   (-> lib 
     (proclaim "base ring" "base item"
               {:is-ring true
+               :freq 0.2
+               :char (char 0x25E6)
                :wield-types [:left-ring :right-ring]})
     (proclaim "ring of speed" "base ring"
               {:parent-modifiers [(wielded-modifier :speed (+ value 30))]})
