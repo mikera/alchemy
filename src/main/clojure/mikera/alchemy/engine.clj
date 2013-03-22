@@ -44,9 +44,9 @@
   (text/num-name game thing))
 
 (defn inventory-name [game thing]
-  (let [s (text/num-name game thing)
+  (let [s (base-name game thing)
         wt (:wielded thing)
-        s (if wt (str s " [" (text/capitalise (:desc (mikera.orculje.rules/WIELD-TYPES wt))) "]"))]
+        s (if wt (str s " [" (text/capitalise (:desc (mikera.orculje.rules/WIELD-TYPES wt))) "]") s)]
     s))
 
 (defn is-hostile [a b]
@@ -505,6 +505,13 @@
     (remove-thing game item)
     (add-thing game (removed-item item) (:location actor))
     (use-aps game actor 100)))
+
+
+(defn try-wield [game actor item wield-type]
+  (as-> game game
+    (message game actor (str (text/verb-phrase game :the actor "wield" :the item) "."))
+    (wield game actor item wield-type) 
+    (use-aps game actor 200)))
 
 (defn try-pickup [game actor item]
   (as-> game game

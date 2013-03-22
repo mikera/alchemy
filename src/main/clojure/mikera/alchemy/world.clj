@@ -148,6 +148,15 @@
       (engine/try-drop game h item)
       (end-turn game))))
 
+(defn handle-wield 
+  "Handles an item drop"
+  [game item wield-type]
+  (let [h (engine/hero game)]
+    (as-> game game
+      (engine/clear-messages game)
+      (engine/try-wield game h item wield-type)
+      (end-turn game))))
+
 (defn handle-throw 
   "Handles an item throw / missile fire"
   [game item tloc]

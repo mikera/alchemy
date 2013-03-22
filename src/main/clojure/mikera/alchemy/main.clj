@@ -571,15 +571,34 @@
                       (fn [n] 
                         (choose-throw-target state (inv n)))))) 
 
+(defn choose-wield-type [state item]
+  (let [game @(:game state)
+        hero (engine/hero game)
+        wtypes (:wield-types item)
+        wfn (fn [item wt] 
+              (swap! (:game state) world/handle-wield item wt)
+              (main-handler state))
+        current (vec (map #(mikera.orculje.rules/get-wielded hero %) wtypes))
+        wtypes-names (vec (map #(str (text/capitalise (:desc (mikera.orculje.rules/WIELD-TYPES %)))
+                                     "  "
+                                     (if %2 (str "[current: " (engine/base-name %2)) "")) 
+                               wtypes current))]
+    (if (== 1 (count wtypes))
+      (wfn item (first wtypes))
+      (item-select-handler state (str "Select a posotion:") 
+                      wtypes-names
+                      0
+                      (fn [n] (wfn item (wtypes n)))))))
+
 (defn choose-wield [state]
   (let [game @(:game state)
         hero (engine/hero game)
         inv (vec (filter :wield-types (contents hero)))]
-    (item-select-handler state "Select an item to wield  / wear:" 
+    (item-select-handler state "Select an item to wield / wear:" 
                       (vec (map (partial engine/inventory-name game) inv))
                       (select-item-pos inv) 
                       (fn [n] 
-                        (choose-throw-target state (inv n)))))) 
+                        (choose-wield-type state (inv n)))))) 
 
  (defn do-look [state]
    (let [game @(:game state)]
