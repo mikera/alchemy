@@ -805,13 +805,21 @@
 (def ATT_NORMAL {:name "normal attack" 
                  :ASK 1.0 :DSK 0.75 :AST 1.0 
                  :damage-type :normal})
-(def ATT_KICK {:name "normal attack" 
+(def ATT_KICK {:name "kick attack" 
                :ASK 0.6 :DSK 0.3 :AST 0.5 
                :damage-type :impact})
-(def ATT_CLAW {:name "normal attack" 
+(def ATT_CLAW {:name "claw attack" 
                :ASK 0.7 :DSK 0.7 :AST 0.7 
                :damage-type :normal
                :hit-verb "claw"})
+(def ATT_BURN {:name "burn attack" 
+               :ASK 0.7 :DSK 0.7 :AST 0.7 
+               :damage-type :fire
+               :hit-verb "burn"})
+(def ATT_ZAP {:name "zap attack" 
+               :ASK 0.7 :DSK 0.7 :AST 0.7 
+               :damage-type :lightning
+               :hit-verb "zap"})
 
 (def ATT_BITE {:name "bite attack" 
                :hit-verb "bite" 
@@ -972,6 +980,7 @@
     (proclaim "base rat" "base creature" 
                    {:SK 4 :ST 3 :AG 6 :TG 2 :IN 1 :WP 5 :CH 2 :CR 2
                     :attack ATT_BITE
+                    :is-rat true
                     :hps 3
                     :char \r
                     :colour-fg (colour 0xB0A090)})
@@ -984,17 +993,27 @@
     (proclaim "giant rat" "rat" 
                    {:level 4
                     :SK 8 :ST 8 :AG 6 :TG 8 
-                    :char \r
                     :hps 10
                     :colour-fg (colour 0xC0C0C0)
                     })
     (proclaim "demon rat" "rat" 
                    {:level 6
                     :SK 10 :ST 10 :AG 10 :TG 10 
-                    :char \r
                     :hps 20
                     :colour-fg (colour 0xFF30A0)
                     })
+    (proclaim "king rat" "rat" 
+                   {:level 8
+                    :SK 10 :ST 10 :AG 10 :TG 10 
+                    :char (char 0x1E59)
+                    :freq 0.2
+                    :hps 30
+                    :colour-fg (colour 0xFFFF00)
+                    :special-action-chance 0.1
+                    :special-action (engine/make-summon-action "[:is-rat]" 
+                                                               :level 5
+                                                               :max-range 3
+                                                               :max-number 8)})
     
     ;; undead
     (proclaim "base undead" "base creature" 
@@ -1080,7 +1099,7 @@
                     :colour-fg (colour 0x606060)})
     
     ;; goblinoids
-    (proclaim "base goblinoid" "base creature"
+    (proclaim "base goblinoid" "base humanoid"
               {:is-goblinoid true
                :attack ATT_NORMAL
                :is-intelligent true})
@@ -1218,7 +1237,54 @@
                     :speed 250
                     :hps 250
                     :attack (merge ATT_POISON_BITE {:damage-effect "poisoned!!" :damage-effect-chance 40})
-                    :colour-fg (colour 0xFFFF00)})))
+                    :colour-fg (colour 0xFFFF00)})
+    
+    ;; daemons
+    (proclaim "base daemon" "base creature"
+              {:is-daemon true
+               :is-living false
+               :freq 0.5
+               :attack ATT_NORMAL
+               :is-intelligent true})
+    (proclaim "water imp" "base daemon"
+              {:level 1
+               :SK 6 :ST 3 :AG 8 :TG 4 :IN 6 :WP 6 :CH 4 :CR 5
+               :hps 4
+               :char \i
+               :colour-fg (colour 0x0060FF)})
+    (proclaim "fire imp" "base daemon"
+              {:level 3
+               :SK 7 :ST 5 :AG 8 :TG 4 :IN 8 :WP 8 :CH 4 :CR 5
+               :hps 6
+               :char \i
+               :attack ATT_BURN
+               :colour-fg (colour 0xFF0000)})
+    (proclaim "rock daemon" "base daemon"
+              {:level 5
+               :SK 8 :ST 7 :AG 6 :TG 20 :IN 10 :WP 10 :CH 10 :CR 5
+               :speed 80
+               :ARM 30
+               :hps 20
+               :char \d
+               :attack ATT_NORMAL
+               :colour-fg (colour 0x806040)})
+    (proclaim "thunder daemon" "base daemon"
+              {:level 6
+               :SK 10 :ST 6 :AG 38 :TG 10 :IN 10 :WP 10 :CH 10 :CR 5
+               :speed 400
+               :confusion 60
+               :hps 10
+               :char \d
+               :attack ATT_ZAP
+               :colour-fg (colour 0xFFFF00)})
+    (proclaim "balrog" "base daemon"
+              {:level 11
+               :SK 30 :ST 50 :AG 50 :TG 80 :IN 80 :WP 80 :CH 34 :CR 35
+               :speed 180
+               :hps 200
+               :char \B
+               :attack ATT_BURN
+               :colour-fg (colour 0xFF0000)})))
 
 (defn rhs "Random hero stat" [] (+ 5 (Rand/r 8)))
 

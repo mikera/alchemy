@@ -539,9 +539,9 @@
 (defn try-move-dir
   [game thing dir]
   (let [loc (location game thing)
-        dir (if (and
-                  (:is-living thing)
-                  (check (or (? game thing :confusion) 0) (? thing :WP))) (DIRECTIONS (Rand/r 8)) dir)
+        dir (if (check (or (? game thing :confusion) 0) (? thing :WP)) 
+              (DIRECTIONS (Rand/r 8)) 
+              dir)
         tloc (loc-add loc dir)
         dz (dir 2)]
     (if (not (== 0 dz))
