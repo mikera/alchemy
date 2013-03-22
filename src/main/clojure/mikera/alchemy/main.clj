@@ -212,6 +212,7 @@
    ["p" "Pick up an item"]
    ["q" "Quaff potion"]
    ["t" "Throw something"]
+   ["w" "Wield a weapon / wear armour"]
    ["<" "Go up stairs / ramp"]
    [">" "Go down stairs/ramp"]
    ["," "Quick pickup (picks up first available item on floor)"]
@@ -463,7 +464,7 @@
           (main-handler state))
       (find-nearest-thing game (name-pred "analysis lab") hero 1)
         (item-select-handler state "Analyse an item:" 
-                           (vec (map (partial engine/base-name game) inv))
+                           (vec (map (partial engine/inventory-name game) inv))
                            (select-item-pos inv) 
                            (fn [n] 
                              (swap! (:game state) world/handle-analyse (inv n))
@@ -478,7 +479,7 @@
         hero (engine/hero game)
         inv (vec (filter :is-item (contents hero)))]
     (item-select-handler state "Drop an item:" 
-                      (vec (map (partial engine/base-name game) inv))
+                      (vec (map (partial engine/inventory-name game) inv))
                       (select-item-pos inv) 
                       (fn [n] 
                         (swap! (:game state) world/handle-drop (inv n))
@@ -489,7 +490,7 @@
         hero (engine/hero game)
         inv (vec (filter :is-food (contents hero)))]
     (item-select-handler state "Eat an item:" 
-                      (vec (map (partial engine/base-name game) inv))
+                      (vec (map (partial engine/inventory-name game) inv))
                       (select-item-pos inv) 
                       (fn [n] 
                         (swap! (:game state) world/handle-consume (inv n))
@@ -512,7 +513,7 @@
         hero (engine/hero game)
         inv (vec (filter :is-item (contents hero)))]
     (item-select-handler state "Examine your inventory:" 
-                      (vec (map (partial engine/base-name game) inv))
+                      (vec (map (partial engine/inventory-name game) inv))
                       (select-item-pos inv) 
                       (fn [n] (main-handler state))))) 
 
@@ -565,7 +566,17 @@
         hero (engine/hero game)
         inv (vec (filter :is-item (contents hero)))]
     (item-select-handler state "Select an item to throw:" 
-                      (vec (map (partial engine/base-name game) inv))
+                      (vec (map (partial engine/inventory-name game) inv))
+                      (select-item-pos inv) 
+                      (fn [n] 
+                        (choose-throw-target state (inv n)))))) 
+
+(defn choose-wield [state]
+  (let [game @(:game state)
+        hero (engine/hero game)
+        inv (vec (filter :wield-types (contents hero)))]
+    (item-select-handler state "Select an item to wield  / wear:" 
+                      (vec (map (partial engine/inventory-name game) inv))
                       (select-item-pos inv) 
                       (fn [n] 
                         (choose-throw-target state (inv n)))))) 
@@ -650,6 +661,7 @@
           (= "o" k) (choose-open state)
           (= "," k) (quick-pickup state)
           (= "t" k) (choose-throw state)
+          (= "w" k) (choose-wield state)
           
           :else
 	          (do 

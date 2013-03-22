@@ -43,6 +43,12 @@
 (defn base-name [game thing]
   (text/num-name game thing))
 
+(defn inventory-name [game thing]
+  (let [s (text/num-name game thing)
+        wt (:wielded thing)
+        s (if wt (str s " [" (text/capitalise (:desc (mikera.orculje.rules/WIELD-TYPES wt))) "]"))]
+    s))
+
 (defn is-hostile [a b]
   (or (:is-hero a) (:is-hero b)))
 
@@ -67,6 +73,23 @@
     (fn [game it] (remove-item game hero it))
     game
     things-or-names))
+
+(defn removed-item 
+  "Modifies an item to indicate changes after it is removed from an inventory.
+   Use number if removing from a stack."
+  ([thing]
+    (as-> thing thing
+      (dissoc thing :wielded)))
+  ([thing number]
+    (let [old-number (:number thing)]
+      (as-> thing thing 
+            (removed-item thing)
+            (if (< number (or (:number thing) 1)) 
+              (dissoc thing :id)
+              thing)
+            (if (not (== number old-number))
+              (assoc thing :number number)
+              thing))))) 
 
 
 ;; =======================================================
@@ -409,7 +432,7 @@
         throw-fn (or (:on-thrown missile) default-throw)] 
     (as-> game game
       (remove-thing game missile 1)
-      (throw-fn game (merge missile {:number 1 :id nil}) actor tloc)
+      (throw-fn game (removed-item missile 1) actor tloc)
       (use-aps game actor 100))))
 
 ;; ======================================================
@@ -479,7 +502,8 @@
 (defn try-drop [game actor item]
   (as-> game game
     (message game actor (str (text/verb-phrase game :the actor "drop" :the item) "."))
-    (move-thing game item (:location actor))
+    (remove-thing game item)
+    (add-thing game (removed-item item) (:location actor))
     (use-aps game actor 100)))
 
 (defn try-pickup [game actor item]
