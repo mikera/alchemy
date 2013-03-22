@@ -909,6 +909,10 @@
                :drop-chance 0.5
                :drop-type "[:is-item]"
                :on-action engine/monster-action})
+    (proclaim "base humanoid" "base creature"
+              {:is-humanoid true}) 
+    (proclaim "base human" "base creature"
+              {:is-human true}) 
     
     ;; misc beasts
     (proclaim "base beast" "base creature"
@@ -995,7 +999,7 @@
     ;; undead
     (proclaim "base undead" "base creature" 
                    {:is-living false
-                    :is-undead false})
+                    :is-undead true})
     (proclaim "zombie" "base undead" 
                    {:level 2
                     :SK 3 :ST 8 :AG 2 :TG 5 :IN 0 :WP 0 :CH 0 :CR 0
@@ -1008,7 +1012,7 @@
                :SK 6 :ST 10 :AG 12 :TG 10 :IN 0 :WP 0 :CH 0 :CR 0
                :hps 20            
                :speed 100
-               :char \G
+               :char \g
                :freq 0.4
                :colour-fg (colour 0x808080)
                :attack (merge ATT_NORMAL {:damage-effect "slowed" :damage-effect-chance 0.2})})
@@ -1060,6 +1064,20 @@
                     :char \S
                     :colour-fg (colour 0x808080)
                     :attack (merge ATT_NORMAL {:damage-effect "slowed!" :damage-effect-chance 0.3})})
+    (proclaim "necromancer" "base creature" {
+                    :level 7
+                    :SK 10 :ST 10 :AG 15 :TG 10 :IN 40 :WP 40 :CH 20 :CR 30
+                    :hps 50            
+                    :speed 100
+                    :confusion 60
+                    :freq 0.5
+                    :char \N
+                    :special-action-chance 0.1
+                    :special-action (engine/make-summon-action "[:is-undead]" 
+                                                               :level 5
+                                                               :max-range 2
+                                                               :max-number 4)
+                    :colour-fg (colour 0x606060)})
     
     ;; goblinoids
     (proclaim "base goblinoid" "base creature"

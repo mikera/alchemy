@@ -68,32 +68,6 @@
     game
     things-or-names))
 
-;; =========================================================
-;; messages
-
-(defn clear-messages [game]
-  (if (seq (:messages game))
-    (as-> game game
-          (assoc game :messages [])
-          (assoc game :message-log (vec (take LOG_LENGTH (cons [] (:message-log game))))))
-    game))
-
-(defn message
-  "Send a message to a given thing. Should be displayed iff it is the hero."
-  ([game msg]
-    (message game (hero game) msg))
-  ([game thing & ss]
-    (if (:is-hero thing)
-      (let [ss (map text/capitalise ss)
-           msgs (or (:messages game) [])
-           new-msgs (vec (concat msgs ss))
-           mlog (or (:message-log game) [msgs])
-           new-mlog (assoc mlog 0 new-msgs)]
-       (as-> game game
-         (assoc game :messages new-msgs)
-         (assoc game :message-log new-mlog)))
-      game)))
-
 
 ;; =======================================================
 ;; item creation
@@ -172,10 +146,45 @@
                                                           (:discovered-world game) 
                                                           game)))))
 
-(defn is-square-visible? [^mikera.orculje.engine.Game game loc-or-thing                       ]
+(defn is-square-visible? [^mikera.orculje.engine.Game game loc-or-thing]
   (let [^BitGrid viz (:visibility game)
         ^mikera.orculje.engine.Location loc (if (loc? loc-or-thing) loc-or-thing (location game loc-or-thing))]
     (.get viz (.x loc) (.y loc) (.z loc))))
+
+;; =========================================================
+;; messages
+
+(defn clear-messages [game]
+  (if (seq (:messages game))
+    (as-> game game
+          (assoc game :messages [])
+          (assoc game :message-log (vec (take LOG_LENGTH (cons [] (:message-log game))))))
+    game))
+
+(defn message
+  "Send a message to a given thing. Should be displayed iff it is the hero."
+  ([game msg]
+    (let [msg (text/capitalise msg)
+          msgs (or (:messages game) [])
+          new-msgs (vec (cons msg msgs))
+          mlog (or (:message-log game) [msgs])
+          new-mlog (assoc mlog 0 new-msgs)]
+      (as-> game game
+            (assoc game :messages new-msgs)
+            (assoc game :message-log new-mlog))))
+  ([game thing msg]
+    (if (:is-hero thing)
+      (message game msg) 
+      game)))
+
+(defn visible-message
+  "Sends a message to the player if a given thing/location is visible"
+  ([game loc-or-thing msg]
+    (if (is-square-visible? game (location game loc-or-thing))
+      (message game msg)
+      game))) 
+
+
 
 ;; ======================================================
 ;; identification
@@ -274,15 +283,21 @@
 ;; ======================================================
 ;; summoning
 
-(defn summon [game loc-or-summoner thing]
-  (let [new-thing (create game thing (current-level game))
-        sloc (location game loc-or-summoner)]
-    (or 
-      (mm/place-thing game 
-                      (loc-add sloc (loc -1 -1 0))
-                      (loc-add sloc (loc 1 1 0))
-                      new-thing)
-      (message game loc-or-summoner (str "Can't summon " (a-name game new-thing)))))) 
+(defn summon 
+  ([game loc-or-summoner thing]
+    (summon game loc-or-summoner thing 1))
+  ([game loc-or-summoner thing max-range]
+    (let [new-thing (if (string? thing) 
+                      (create game thing (current-level game))
+                      thing)
+          sloc (location game loc-or-summoner)]
+      (or 
+        (and thing (mm/place-thing game 
+                        (loc-add sloc (loc (- max-range) (- max-range) 0))
+                        (loc-add sloc (loc max-range max-range 0))
+                        new-thing))
+        (and thing (message game loc-or-summoner (str "Can't summon " (a-name game new-thing))))
+        game)))) 
 
 
 ;; ======================================================
@@ -553,18 +568,30 @@
         (try-move-dir game m dir)
         nil))))
 
-(defn monster-action 
-  "Performs one action for a monster. Assume this function only called if monster has 
-   sufficient aps to make a move." 
-  ([game m]
-    ;;(println (str "monster thinking: " (:name m)))
-    (let [m (get-thing game m)
-          loc (location game m)
-          tloc (:target-location m)
-          hloc (hero-location game)
-          same-level? (== (hloc 2) (loc 2))
-          hloc (or (and same-level? (is-square-visible? game loc) hloc)
-                   tloc)]
+(defn make-summon-action [type & {:keys [number level max-range min-number max-number]}]
+  (let [max-range (or max-range 1)
+        min-number (int (or min-number number 1))
+        max-number (int (or max-number min-number))]
+    (fn [game m]
+      (as-> game game 
+            (let [level (or level (:level m))
+                  number (or number (Rand/range min-number max-number))]
+              (reduce 
+                (fn [game _] (summon game m (create game type level) max-range))
+                game
+                (range number)))
+            (visible-message game m (str (the-name game m) " summons help!"))
+            (use-aps game m 200)))))
+
+(defn monster-move
+  "Performs a normal monster move (charge, atack, wander etc.)"
+  [game m]
+  (let [loc (location game m)
+        tloc (:target-location m)
+        hloc (hero-location game)
+        same-level? (== (hloc 2) (loc 2))
+        hloc (or (and same-level? (is-square-visible? game loc) hloc)
+                 tloc)]
       (if hloc
         (let [dir (direction loc hloc)
               di (or (REVERSE-DIRECTIONS dir) 
@@ -584,4 +611,17 @@
               (wait game m))))
         (if (Rand/chance 0.1)
           (try-move-dir game m (DIRECTIONS (Rand/r 10)))
-          game)))))
+          game)))) 
+
+(defn monster-action 
+  "Performs one action for a monster. Assume this function only called if monster has 
+   sufficient aps to make a move." 
+  ([game m]
+    ;;(println (str "monster thinking: " (:name m)))
+    (let [m (get-thing game m)
+          loc (location game m)
+          visible? (is-square-visible? game loc)] 
+      (cond 
+        (and visible? (:special-action m) (Rand/chance (double (or (:special-action-chance m) 1.0))))
+          ((:special-action m) game m)
+        :else (monster-move game m)))))
