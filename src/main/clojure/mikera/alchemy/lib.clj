@@ -786,10 +786,26 @@
               {:level 5
                :food-value 300})))
 
-
-
 (defn define-weapons [lib]
   (-> lib ))
+
+(defn define-rings [lib]
+  (-> lib 
+    (proclaim "base ring" "base item"
+              {:is-ring true
+               :wield-types [:left-ring :right-ring]})
+    (proclaim "ring of speed" "base ring"
+              {:parent-modifiers [(wielded-modifier :speed (+ value 30))]})
+    (proclaim "ring of adornment" "base ring"
+              {:parent-modifiers [(wielded-modifier :CH (+ value 30))]})
+    (proclaim "ring of might" "base ring"
+              {:parent-modifiers [(wielded-modifier :ST (+ value 5))]})
+    (proclaim "ring of protection" "base ring"
+              {:parent-modifiers [(wielded-modifier :ARM (+ (or value 0) 5))]})
+    (proclaim "ring of fire resistance" "base ring"
+              {:parent-modifiers [(wielded-modifier :damage-factor-fire (* (or value 1.0) 0.5))]})
+    (proclaim "ring of lightning resistance" "base ring"
+              {:parent-modifiers [(wielded-modifier :damage-factor-lightning (* (or value 1.0) 0.5))]})))
 
 
 (defn define-artifacts [lib]
@@ -818,6 +834,7 @@
     (define-food)
     (define-potions)
     (define-weapons)
+    (define-rings)
     (define-artifacts)))
 
 ;; ===================================================
