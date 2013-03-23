@@ -1,5 +1,8 @@
 (ns mikera.alchemy.config)
 
+(set! *warn-on-reflection* true)
+(set! *unchecked-math* true)
+
 ;; true false
 
 (def DEBUG false)

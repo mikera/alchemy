@@ -8,6 +8,11 @@
   (:require [clojure.math.combinatorics :as combo])
   (:import [mikera.util Rand]))
 
+
+(set! *warn-on-reflection* true)
+(set! *unchecked-math* true)
+
+
 (declare create)
 
 ;; ===================================================

@@ -7,6 +7,11 @@
   (:require [mikera.alchemy.lib :as lib])
   (:require [mikera.orculje.mapmaker :as mm]))
 
+
+(set! *warn-on-reflection* true)
+(set! *unchecked-math* true)
+
+
 (defmacro and-as-> [expr sym & body]
   `(as-> ~expr ~sym
      ~@(map (fn [b] `(and ~sym ~b)) (butlast body))
