@@ -129,7 +129,7 @@
       (reduce (fn [game con]
                 (mm/fill-block game con con (lib/create game "floor"))) game connections))))
 
-(def TUNNEL-DIRS [(loc 1 0 0) (loc -1 0 0) (loc 0 1 0)(loc 0 -1 0)])
+(def ^clojure.lang.APersistentVector TUNNEL-DIRS [(loc 1 0 0) (loc -1 0 0) (loc 0 1 0)(loc 0 -1 0)])
 
 (defn generate-tunnel
   [game ^mikera.orculje.engine.Location lmin 

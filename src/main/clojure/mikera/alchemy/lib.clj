@@ -484,7 +484,7 @@
                               (if (> (Rand/po elapsed average-lifetime) 0)
                                 (remove-thing game effect)
                                 (update-thing game (-> effect
-                                                     (assoc :colour-fg (Rand/pick (:cloud-colours effect)))))))) 
+                                                     (assoc :colour-fg (Rand/pick ^clojure.lang.APersistentVector (:cloud-colours effect)))))))) 
                :lifetime 500
                :cloud-colours [(colour 0x808080) (colour 0xA0A0A0) (colour 0xC0C0C0)]
                :z-order 70})
@@ -1337,7 +1337,7 @@
 
 (defn post-process-properties [v]
   (as-> v v
-    (if (.startsWith (:name v) "base ") (assoc v :freq 0.0) v)
+    (if (.startsWith (str (:name v)) "base ") (assoc v :freq 0.0) v)
     (if (number? (:colour-fg v)) (assoc v :colour-fg (colour (:colour-fg v))) v)
     (if (number? (:colour-bg v)) (assoc v :colour-bg (colour (:colour-bg v))) v)
     (assoc v :level (or (:level v) 0))
