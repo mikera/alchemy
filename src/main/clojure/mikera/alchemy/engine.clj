@@ -242,6 +242,10 @@
   (or (:is-recipe-known thing)
       (:is-recipe-known ((:objects (:lib game)) (:name thing)))))
 
+(defn describe [game hero thing]
+  (if (is-identified? game thing)
+    [(str "This is " (a-name game thing))]
+    [(str "This seems to be " (a-name game thing))])) 
 
 ;; ======================================================
 ;; action handling
@@ -503,7 +507,7 @@
   (as-> game game
     (message game actor (str (text/verb-phrase game :the actor "drop" :the item) "."))
     (remove-thing game item)
-    (add-thing game (removed-item item) (:location actor))
+    (add-thing game (location game actor) (removed-item item) )
     (use-aps game actor 100)))
 
 

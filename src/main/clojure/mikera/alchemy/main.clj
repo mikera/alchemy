@@ -49,18 +49,20 @@
 (defn displayable-thing 
   "Gets the thing that should be displayed in a given square 
    (i.e. highest z-order of all visible things)"
-  [game ^long x ^long y ^long z]
-  (let [t (or (get-tile game x y z) world/BLANK_TILE)]
-    (loop [z-order (long -100)
-           ct t
-           ts (seq (get-things game x y z))]
-      (if ts
-        (let [nt (first ts)
-              nz (long (:z-order nt 0))]
-          (if (and (> nz z-order) (not (:is-invisible nt)))                
-            (recur nz nt (next ts))
-            (recur z-order ct (next ts))))
-        ct))))
+  ([game ^mikera.orculje.engine.Location loc]
+    (displayable-thing game (.x loc) (.y loc) (.z loc)))
+  ([game ^long x ^long y ^long z]
+    (let [t (or (get-tile game x y z) world/BLANK_TILE)]
+      (loop [z-order (long -100)
+             ct t
+             ts (seq (get-things game x y z))]
+        (if ts
+          (let [nt (first ts)
+                nz (long (:z-order nt 0))]
+            (if (and (> nz z-order) (not (:is-invisible nt)))                
+              (recur nz nt (next ts))
+              (recur z-order ct (next ts))))
+          ct)))))
 
 (defn shade-colour 
   "Produces a fade to black over distance"
@@ -243,6 +245,19 @@
 
 ;; ========================================================
 ;; messages
+
+(defn show-text [state title text-strings]
+  (let [^JConsole jc (:console state)
+	      w (.getColumns jc)
+	      h (.getRows jc)
+        msg-list (vec (take 26 text-strings))]
+    (.fillArea jc \space TEXT_COLOUR (colour 0x010020) 0 0 w h)
+    (.setForeground jc ^Color TEXT_COLOUR)
+    (.setBackground jc ^Color (colour 0x010020))   
+    (gui/draw jc 1 0 title)
+    (dotimes [i (min (- SCREEN_HEIGHT 3) (count msg-list))]
+      (let [ms (msg-list i)]
+        (gui/draw jc 3 (+ 2 i) ms))))) 
 
 (defn show-messages [state]
   (let [^JConsole jc (:console state)
@@ -482,6 +497,7 @@
                       (vec (map (partial engine/inventory-name game) inv))
                       (select-item-pos inv) 
                       (fn [n] 
+                        ;; (println (str "dropping" (inv n)))
                         (swap! (:game state) world/handle-drop (inv n))
                         (main-handler state))))) 
 
@@ -512,10 +528,18 @@
   (let [game @(:game state)
         hero (engine/hero game)
         inv (vec (filter :is-item (contents hero)))]
-    (item-select-handler state "Examine your inventory:" 
+    (item-select-handler state "Examine your inventory (ESC to exit)" 
                       (vec (map (partial engine/inventory-name game) inv))
                       (select-item-pos inv) 
-                      (fn [n] (main-handler state))))) 
+                      (fn [n] 
+                        (show-text state 
+                                   (text/capitalise (engine/base-name game (inv n))) 
+                                   (engine/describe game hero (inv n)))
+                        (reset! (:event-handler state) 
+                                (fn [^String k]
+                                  (cond 
+                                    (.contains "qQ" k) (main-handler state)
+                                    :else (show-inventory state)))))))) 
 
 (defn choose-pickup [state]
   (let [game @(:game state)
@@ -600,13 +624,26 @@
                       (fn [n] 
                         (choose-wield-type state (inv n)))))) 
 
- (defn do-look [state]
-   (let [game @(:game state)]
-     (map-select-handler state 
-                       "Look around:" 
-                       (engine/hero-location game) 
-                       (fn [n] 
-                         (main-handler state))))) 
+ (defn do-look 
+   ([state]
+     (let [game @(:game state)]
+       (do-look state (location game (engine/hero game)))))
+   ([state loc]
+     (let [game @(:game state)
+           hero (engine/hero game)]
+       (map-select-handler state 
+                       "Look around: (ESC or Q to stop, space to examine object)" 
+                       loc 
+                       (fn [loc] 
+                        (let [obj (displayable-thing game loc)]
+                          (show-text state 
+                                   (text/capitalise (engine/base-name game obj)) 
+                                   (engine/describe game hero obj)))
+                        (reset! (:event-handler state) 
+                                (fn [^String k]
+                                  (cond 
+                                    (.contains "qQ" k) (main-handler state)
+                                    :else (do-look state loc))))))))) 
 
 ;;=========================================================
 ;; special actions
