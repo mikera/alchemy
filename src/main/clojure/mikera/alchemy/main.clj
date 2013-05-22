@@ -127,7 +127,7 @@
 	      game @(:game state) 
         w (.getColumns jc)
 	      h (.getRows jc)
-        msgs (reverse (:messages game))
+        msgs (vec (reverse (:messages game)))
         cm (count msgs)
         mh MAX_DISPLAYED_MESSAGES
         sy 0
