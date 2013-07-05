@@ -2,6 +2,7 @@
   (:use mikera.orculje.core)
   (:use mikera.orculje.util)
   (:use mikera.cljutils.error)
+  (:use mikera.cljutils.loops)
   (:import [mikera.util Rand])
   (:require [mikera.cljutils.find :as find])
   (:require [mikera.alchemy.lib :as lib])
