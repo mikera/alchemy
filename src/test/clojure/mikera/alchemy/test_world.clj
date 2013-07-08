@@ -7,6 +7,7 @@
 
 (deftest test-game
   (let [game (new-game)]
+    (is (:is-hero (engine/hero game)))
     (is (some 
               #(= (:name %) "you")
               (lib/all-library-things game)))
