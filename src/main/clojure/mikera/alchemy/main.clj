@@ -606,7 +606,7 @@
         current (vec (map #(mikera.orculje.rules/get-wielded hero %) wtypes))
         wtypes-names (vec (map #(str (text/capitalise (:desc (mikera.orculje.rules/WIELD-TYPES %)))
                                      "  "
-                                     (if %2 (str "[current: " (engine/base-name %2)) "")) 
+                                     (if %2 (str "[current: " (engine/base-name game %2)) "")) 
                                wtypes current))]
     (if (== 1 (count wtypes))
       (wfn item (first wtypes))
