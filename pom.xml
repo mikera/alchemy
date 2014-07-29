@@ -2,7 +2,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<artifactId>alchemy</artifactId>
 	<groupId>net.mikera</groupId>
-	<version>0.0.3</version>
+	<version>0.0.4-SNAPSHOT</version>
 	
 	<parent>
 		<groupId>net.mikera</groupId>
@@ -79,6 +79,6 @@
 		<connection>scm:git:git@github.com:mikera/${project.artifactId}.git</connection>
 		<url>scm:git:git@github.com:mikera/${project.artifactId}.git</url>
 		<developerConnection>scm:git:git@github.com:mikera/${project.artifactId}.git</developerConnection>
-		<tag>alchemy-0.0.3</tag>
+		<tag>alchemy-0.0.1</tag>
 	</scm>
 </project>
