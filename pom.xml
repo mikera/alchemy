@@ -1,11 +1,13 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 	<artifactId>alchemy</artifactId>
+	<groupId>net.mikera</groupId>
 	<version>0.0.3-SNAPSHOT</version>
+	
 	<parent>
 		<groupId>net.mikera</groupId>
 		<artifactId>clojure-pom</artifactId>
-		<version>0.0.4</version>
+		<version>0.1.5</version>
 	</parent>
 
 	<build>
@@ -31,7 +33,7 @@
 		<dependency>
 			<groupId>org.clojure</groupId>
 			<artifactId>clojure</artifactId>
-			<version>1.5.1</version>
+			<version>1.6.0</version>
 		</dependency>
 		<dependency>
 			<groupId>net.mikera</groupId>
@@ -41,7 +43,7 @@
 		<dependency>
 			<groupId>net.mikera</groupId>
 			<artifactId>mikera</artifactId>
-			<version>1.5.1</version>
+			<version>1.6.0</version>
 		</dependency>
 		<dependency>
 			<groupId>net.mikera</groupId>
@@ -51,17 +53,17 @@
 		<dependency>
 			<groupId>net.mikera</groupId>
 			<artifactId>mathz</artifactId>
-			<version>0.1.0</version>
+			<version>0.3.0</version>
 		</dependency>
 		<dependency>
 			<groupId>net.mikera</groupId>
 			<artifactId>cljunit</artifactId>
-			<version>0.2.0</version>
+			<version>0.3.1</version>
 		</dependency>
 		<dependency>
 			<groupId>org.clojure</groupId>
 			<artifactId>math.combinatorics</artifactId>
-			<version>0.0.4</version>
+			<version>0.0.8</version>
 		</dependency>
 	</dependencies>
 	
