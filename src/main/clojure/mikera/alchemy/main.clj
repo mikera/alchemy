@@ -750,3 +750,19 @@
        (as-> ~'game ~'game
              ~@body))
      (main-handler ~'s)))
+
+(comment
+  ;; launch in REPL mode
+  (launch)
+  
+  (keys s)
+  
+  ;; event handler, trampoline patterm
+  (:event-handler s)
+  
+  (keys @(:game s))
+  
+  (engine/hero-location @(:game s))
+  
+  (engine/hero @(:game s))
+  )
