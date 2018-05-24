@@ -762,7 +762,17 @@
   
   (keys @(:game s))
   
-  (engine/hero-location @(:game s))
-  
   (engine/hero @(:game s))
+  
+  (def hl (engine/hero-location @(:game s)))
+  
+  (get-tile @(:game s) hl)
+  
+  ;; get the current game
+  (def g @(:game s))
+  ;; save a state
+  (def original-g g)
+  ;; do some stuff
+  (reset! (:game s) original-g)
+  (redraw-screen s)
   )
