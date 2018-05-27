@@ -331,7 +331,7 @@
               (connect-levels game lmin lmax))))
 
 (defn generate 
-   "Main dungeon generation algorithm"
+   "Main dungeon generation algorithm. Retry if generation fails!"
   [game]
   (let []
     (loop [game game i 100]
